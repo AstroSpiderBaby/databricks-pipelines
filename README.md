@@ -8,15 +8,20 @@ The goal is to explore multiple strategies for handling batch ingestion and proc
 
 ## 📦 Project Structure
 
+
+```text
 databricks-pipelines/
 ├── pipeline1_batch_delta/
-│ ├── bronze/ # Mock ingestion scripts (inventory, shipments, vendors)
-│ ├── silver/ # Enrichment and transformations (joins, cleansing)
-│ ├── gold/ # Aggregated business-ready outputs
-│ ├── transform/ # Merge logic and shared transformations (planned)
-│ ├── utils/ # Mounting, write helpers, and reusable scripts
-│ └── docs/ # Setup instructions (e.g., Git, Key Vault, Blob mounts)
-├── common/ # Shared utilities across pipelines
+│   ├── bronze/       # Mock ingestion scripts (inventory, shipments, vendors)
+│   ├── silver/       # Enrichment and transformations (joins, cleansing)
+│   ├── gold/         # Aggregated business-ready outputs
+│   ├── transform/    # Merge logic and shared transformations (planned)
+│   ├── utils/        # Mounting, write helpers, reusable scripts
+│   └── docs/         # Setup instructions (Git, Key Vault, Blob mounts)
+├── common/           # Shared utilities across pipelines
+└── README.md         # Project overview and structure
+```
+
 
 
 ## 🔁 Pipeline Variants (Planned)
