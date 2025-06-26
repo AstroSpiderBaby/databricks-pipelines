@@ -6,19 +6,17 @@ The goal is to explore multiple ways to handle batch ingestion and processing us
 
 ---
 
-## 📦 Contents
+## 📦 Project Structure
 
 databricks-pipelines/
 ├── pipeline1_batch_delta/
-│ ├── ingest_source_a.py
-│ ├── ingest_source_b.py
-│ ├── transform_and_merge.py
-│ └── write_to_delta.py
-├── common/
-│ └── utils.py # Reusable helper functions (future)
-├── data/
-│ ├── mock_source_a/ # Sample CSV data (Azure-style)
-│ └── mock_source_b/ # Sample JSON data
+│   ├── bronze/       # Raw ingestion notebooks (source_a, source_b, etc.)
+│   ├── silver/       # Transformation and data quality logic
+│   ├── gold/         # Aggregated business-ready outputs
+│   ├── transform/    # Merge logic and shared transformations
+│   ├── utils/        # Mounting, write helpers, and reusable scripts
+│   └── docs/         # Setup, Key Vault, Blob mount instructions
+├── common/           # Shared utilities across pipelines
 
 ## 🔁 Pipeline Variants (Planned)
 
