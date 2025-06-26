@@ -58,3 +58,5 @@ Mock data is stored under `/data/` folders or loaded via mock ingestion scripts 
 ## 🔒 License
 
 This project is open source under the MIT license.
+
+> Synced from Databricks on June 26
