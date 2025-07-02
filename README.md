@@ -10,16 +10,18 @@ The goal is to explore multiple strategies for handling **batch ingestion and pr
 
 
 ```text
+```text
 databricks-pipelines/
 ├── pipeline1_batch_delta/
-│   ├── bronze/       # Mock ingestion scripts (inventory, shipments, vendors, web forms)
-│   ├── silver/       # Enrichment and transformations (joins, cleansing)
-│   ├── gold/         # Aggregated business-ready outputs
-│   ├── transform/    # Merge logic and reusable components (planned)
-│   ├── utils/        # Mount scripts, write helpers, secure configs
-│   └── docs/         # Setup notes for Git, Azure Key Vault, etc.
-├── common/           # Shared utilities across pipelines
-└── README.md         # Project overview and structure
+│   ├── bronze/         # Mock ingestion scripts (inventory, shipments, vendors)
+│   ├── silver/         # Enrichment and transformations (joins, cleansing)
+│   ├── gold/           # Aggregated business-ready outputs
+│   ├── transform/      # Merge logic and shared transformations (planned)
+│   ├── utils/          # Mounting, write helpers, reusable scripts
+│   └── docs/           # Setup instructions (Git, Key Vault, Blob mounts)
+├── common/             # Shared utilities across pipelines
+├── LICENSE
+└── README.md           # Project overview and structure
 ```
 
 
@@ -65,6 +67,61 @@ The current gold output includes:
 - Data quality checks and transformations applied in the Silver layer
 
 ---
+🔗 SQL Server Integration via Ngrok + Azure Key Vault
+This project includes secure connectivity between Azure Databricks and a local SQL Server instance using:
+
+🔐 Azure Key Vault for storing secrets like JDBC URL, SQL user, and password
+
+🛠️ Databricks Secret Scopes to fetch secrets at runtime
+
+🌐 Ngrok to tunnel localhost:1433 for remote JDBC access
+
+🔑 Required Azure Key Vault Secrets:
+Secret Name	Description
+sql-jdbc-url	JDBC string using your ngrok TCP forwarding URL
+sql-user	SQL Server login username
+sql-password	SQL Server login password
+
+These secrets are stored in your Azure Key Vault instance and referenced in your code via a Databricks-backed secret scope (e.g., databricks-secrets-lv426).
+
+🧪 Sample Usage
+In utils/sql_connector.py, the following logic is used:
+
+python
+Copy
+Edit
+jdbc_url = dbutils.secrets.get(scope="databricks-secrets-lv426", key="sql-jdbc-url")
+connection_properties = {
+    "user": dbutils.secrets.get(scope="databricks-secrets-lv426", key="sql-user"),
+    "password": dbutils.secrets.get(scope="databricks-secrets-lv426", key="sql-password"),
+    "driver": "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+}
+
+df = spark.read.jdbc(url=jdbc_url, table="INFORMATION_SCHEMA.TABLES", properties=connection_properties)
+🚪 Example Ngrok Setup (One-Time)
+Install ngrok
+
+Authenticate:
+
+bash
+Copy
+Edit
+ngrok config add-authtoken <your-token>
+Start a TCP tunnel:
+
+bash
+Copy
+Edit
+ngrok tcp --region=us localhost:1433
+Use the tcp://<host>:<port> from ngrok to build your JDBC URL:
+
+php-template
+Copy
+Edit
+jdbc:sqlserver://<host>:<port>;databaseName=fury161;
+Paste this into Azure Key Vault under sql-jdbc-url.
+
+
 
 ## 🧠 Project Goals
 
@@ -129,6 +186,6 @@ This project is open source under the MIT License.
 
 🔁 Synced from Azure Databricks
 🧠 Maintained by AstroSpiderBaby
-🕒 Last updated: July 1, 2025
+🕒 Last updated: July 2, 2025
 ---
 
