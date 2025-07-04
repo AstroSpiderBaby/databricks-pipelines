@@ -58,6 +58,8 @@ databricks-pipelines/
 ## 🧰 Technologies
 
 - Azure Databricks (Runtime 15.4)
+- Azure Data Factory (ADF)
+- SQL Server On-Prem
 - Delta Lake (Bronze, Silver, Gold architecture)
 - Azure Blob Storage (mounted via Azure Key Vault + Secret Scope)
 - PySpark
