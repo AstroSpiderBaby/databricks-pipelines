@@ -1,0 +1,9 @@
+{
+	"name": "AstrosFactory",
+	"location": "westus2",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "70a5ce84-db30-45e9-b449-f201b992c4d5",
+		"tenantId": "79beba65-3712-4f7b-8756-dd90fd4af73d"
+	}
+}

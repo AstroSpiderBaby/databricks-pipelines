@@ -1,0 +1,151 @@
+{
+	"name": "astrospipeline",
+	"properties": {
+		"description": "Testing ADF to Databricks",
+		"activities": [
+			{
+				"name": "Data In ADF",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureDatabricksDeltaLakeSink",
+						"importSettings": {
+							"type": "AzureDatabricksDeltaLakeImportCommand"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "Social Security",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Social_Security",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Date of Birth",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Date_of_Birth",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "First Name",
+									"type": "String"
+								},
+								"sink": {
+									"name": "First_Name",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Last Name",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Last_Name",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Doctor",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Doctor",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Facility",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Facility",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Visit Date",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Visit_Date",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Diagnosis",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Diagnosis",
+									"type": "String"
+								}
+							},
+							{
+								"source": {
+									"name": "Comments",
+									"type": "String"
+								},
+								"sink": {
+									"name": "Comments",
+									"type": "String"
+								}
+							}
+						]
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DelimitedText1",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "AzureDatabricksDeltaLakeDataset1",
+						"type": "DatasetReference"
+					}
+				]
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2025-01-16T00:02:06Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

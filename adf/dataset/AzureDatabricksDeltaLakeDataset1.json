@@ -1,0 +1,54 @@
+{
+	"name": "AzureDatabricksDeltaLakeDataset1",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureDatabricksLinkedService",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureDatabricksDeltaLakeDataset",
+		"typeProperties": {
+			"database": "default",
+			"table": "adf_mock"
+		},
+		"schema": [
+			{
+				"name": "Social_Security",
+				"type": "string"
+			},
+			{
+				"name": "Date_of_Birth",
+				"type": "string"
+			},
+			{
+				"name": "First_Name",
+				"type": "string"
+			},
+			{
+				"name": "Last_Name",
+				"type": "string"
+			},
+			{
+				"name": "Doctor",
+				"type": "string"
+			},
+			{
+				"name": "Facility",
+				"type": "string"
+			},
+			{
+				"name": "Visit_Date",
+				"type": "string"
+			},
+			{
+				"name": "Diagnosis",
+				"type": "string"
+			},
+			{
+				"name": "Comments",
+				"type": "string"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}
