@@ -50,21 +50,72 @@ databricks-pipelines/
 - GitHub (with Databricks Repos integration)
 
 ---
+## 📊 Pipeline Flow
+
+```text
+Raw CSVs (Bronze)
+     │
+     ▼
+transform_finance_invoices.py   +   silver_vendor_compliance.py
+     │                                      │
+     ▼                                      ▼
+finance_invoices_v2                vendor_compliance_clean
+     │
+     ▼
+silver_enrichment.py  ──► finance_with_vendor_info
+     │
+     ▼
+04e_transform_all_clean.py ──► final_vendor_summary_prep
+     │
+     ▼
+gold_summary.py ──► vendor_summary_clean (Gold)
+
+
+## 📂 Pipeline Stage Documentation
+
+- [🔶 Bronze Layer](pipeline1_batch_delta/bronze/README.md)
+- [⚪ Silver Layer](pipeline1_batch_delta/silver/README.md)
+- [🥇 Gold Layer](pipeline1_batch_delta/gold/README.md)
+- [🛠️ Utils](pipeline1_batch_delta/utils/README.md)
+
 
 ## 📈 Gold Layer Output
 
-The current gold output includes:
+The Gold layer produces a single Delta table:
 
-- `vendor_summary_clean`: Aggregates total inventory items and shipment activity per vendor, using joined data from inventory and shipment sources.
+### `vendor_summary_clean`
+
+This aggregated table summarizes key compliance and financial metrics per vendor:
+
+| Column Name        | Description                                           |
+|--------------------|-------------------------------------------------------|
+| `vendor_id`        | Normalized vendor identifier                          |
+| `vendor_name`      | Human-readable vendor name (e.g., "Vendor A")         |
+| `total_invoices`   | Count of unique invoices associated with the vendor   |
+| `latest_due_date`  | Most recent due date across all invoices              |
+| `latest_invoice_date` | Most recent invoice date                           |
+| `last_audit_date`  | Most recent compliance audit                          |
+| `compliance_score` | Latest compliance score (0–100 scale)                 |
+| `compliance_status`| Status category: "Compliant", "At Risk", or "Suspended"|
+
+This table joins enriched invoice data with vendor compliance metrics and is designed for analytics, reporting, and downstream BI tools.
+
 
 ---
 
 ## 🧪 Testing and Mock Data
 
-- Mock data (CSV/JSON) is stored in `/mnt/raw-ingest/` and `/mnt/external-ingest/`
-- Ingested via `mock_*.py` scripts (e.g., `mock_finance_invoices.py`, `mock_web_forms.py`)
-- Cleaned, transformed, and versioned for reproducibility
-- Data quality checks and transformations applied in the Silver layer
+- Mock CSV files are stored in mounted Blob Storage paths like `/mnt/raw-ingest/finance_invoice_data.csv`
+- Ingested using scripts like:
+  - `mock_finance_invoices.py`
+  - `mock_web_forms.py`
+- Cleaned and normalized in Silver using:
+  - `transform_finance_invoices.py` → outputs `finance_invoices_v2`
+  - `silver_vendor_compliance.py` → outputs `vendor_compliance_clean`
+  - `silver_enrichment.py` → joins to vendor name
+  - `04e_transform_all_clean.py` → creates `final_vendor_summary_prep`
+- Final aggregation happens in `gold_summary.py`
+
 
 ---
 🔗 SQL Server Integration via Ngrok + Azure Key Vault
@@ -103,21 +154,13 @@ Install ngrok
 
 Authenticate:
 
-bash
-Copy
-Edit
 ngrok config add-authtoken <your-token>
 Start a TCP tunnel:
 
-bash
-Copy
-Edit
 ngrok tcp --region=us localhost:1433
 Use the tcp://<host>:<port> from ngrok to build your JDBC URL:
 
-php-template
-Copy
-Edit
+
 jdbc:sqlserver://<host>:<port>;databaseName=fury161;
 Paste this into Azure Key Vault under sql-jdbc-url.
 
