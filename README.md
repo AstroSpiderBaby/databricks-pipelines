@@ -207,4 +207,4 @@ Run the notebooks in order (Databricks Repos or VS Code):
 
 MIT License  
 Maintained by AstroSpiderBaby  
-_Last updated: July 2, 2025_
+_Last updated: July 4, 2025_
