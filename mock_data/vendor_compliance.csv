@@ -1,0 +1,11 @@
+vendor_id,compliance_score,last_audit_date,status
+V001,96.5,2025-06-01,Compliant
+V002,89.2,2025-06-10,Compliant
+V003,72.0,2025-05-25,At Risk
+V004,45.0,2025-04-20,Suspended
+V005,83.3,2025-05-30,Compliant
+V006,68.4,2025-05-15,At Risk
+V007,91.8,2025-06-08,Compliant
+V008,59.7,2025-04-18,At Risk
+V009,77.5,2025-05-20,Compliant
+V010,39.9,2025-03-10,Suspended

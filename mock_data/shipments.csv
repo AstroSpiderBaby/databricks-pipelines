@@ -1,0 +1,11 @@
+shipment_id,vendor_id,ship_date,expected_delivery_date,destination,status,carrier,delivered
+SHP001,V009,4/3/2025,4/5/2025,Denver,Cancelled,UPS,False
+SHP002,V007,4/3/2025,4/6/2025,Dallas,In Transit,FedEx,False
+SHP003,V004,4/3/2025,4/7/2025,Phoenix,In Transit,DHL,False
+SHP004,V002,4/3/2025,4/8/2025,Denver,Cancelled,FedEx,False
+SHP005,V010,4/3/2025,4/9/2025,Atlanta,Delivered,UPS,True
+SHP006,V004,4/3/2025,4/10/2025,Atlanta,In Transit,DHL,False
+SHP007,V001,4/3/2025,4/11/2025,Dallas,Delayed,FedEx,False
+SHP008,V001,4/3/2025,4/12/2025,Dallas,Delayed,DHL,False
+SHP009,V009,4/3/2025,4/13/2025,Phoenix,Delayed,UPS,False
+SHP010,V007,4/3/2025,4/14/2025,Phoenix,Delivered,UPS,True

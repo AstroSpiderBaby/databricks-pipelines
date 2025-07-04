@@ -1,0 +1,11 @@
+item_id,item_name,category,quantity_on_hand,unit_price,reorder_level,location,last_updated
+ITM001,Item 1,Electronics,325,25.5,192,Houston,4/3/2025
+ITM002,Item 2,Office Supplies,87,5.75,106,New York,4/3/2025
+ITM003,Item 3,Electronics,273,15.0,133,Chicago,4/3/2025
+ITM004,Item 4,Furniture,373,110.0,64,Chicago,4/3/2025
+ITM005,Item 5,Office Supplies,125,7.2,108,Houston,4/3/2025
+ITM006,Item 6,Electronics,83,6.85,58,Houston,4/3/2025
+ITM007,Item 7,Furniture,236,12.45,230,Seattle,4/3/2025
+ITM008,Item 8,Office Supplies,194,8.95,152,New York,4/3/2025
+ITM009,Item 9,Electronics,138,9.5,118,Los Angeles,4/3/2025
+ITM010,Item 10,Furniture,473,50.0,66,New York,4/3/2025

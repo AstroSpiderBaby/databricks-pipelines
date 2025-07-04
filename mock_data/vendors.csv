@@ -1,0 +1,11 @@
+vendor_id,name,contact_email,location,rating,registration_date,is_active
+V001,Vendor A,vendor1@example.com,Houston,3.0,1/15/2020,True
+V002,Vendor B,vendor2@example.com,New York,3.8,1/15/2021,True
+V003,Vendor C,vendor3@example.com,Chicago,2.6,1/15/2022,True
+V004,Vendor D,vendor4@example.com,Chicago,3.0,1/15/2020,True
+V005,Vendor E,vendor5@example.com,Houston,4.1,1/15/2021,True
+V006,Vendor F,vendor6@example.com,Houston,3.9,1/15/2022,True
+V007,Vendor G,vendor7@example.com,Seattle,3.1,1/15/2020,False
+V008,Vendor H,vendor8@example.com,New York,4.0,1/15/2021,True
+V009,Vendor I,vendor9@example.com,Los Angeles,4.5,1/15/2022,False
+V010,Vendor J,vendor10@example.com,New York,2.5,1/15/2020,True
