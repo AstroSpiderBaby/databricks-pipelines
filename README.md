@@ -3,6 +3,9 @@
 This repository contains modular data pipelines built using **Azure Databricks**, **Azure Blob Storage**, **Delta Lake**, and **Workflows**.  
 The goal is to explore multiple strategies for handling **batch ingestion and processing** using clean, cost-effective patterns that can scale to streaming with Autoloader in future iterations.
 
+## 🤝 Contributing
+Contributions are welcome! Please review [CONTRIBUTING.md](./CONTRIBUTING.md) before submitting pull requests.
+
 ---
 
 ## 📑 Table of Contents
