@@ -86,6 +86,48 @@ gold_summary.py ──► vendor_summary_clean (Gold)
 
 ---
 
+
+---
+
+## 🔁 Databricks Workflow Orchestration
+
+This project uses a visual **Databricks Workflow** to orchestrate the full pipeline execution in a modular, dependency-driven manner:
+
+```text
+bronze → silver → gold
+     ↓        ↓        ↓
+mock_ingest  enrich    summarize
+```
+
+### Workflow: `pipeline1_batch_delta_workflow`
+
+```text
+00_ingest_finance_invoices
+00a_ingest_vendor_compliance
+00b_ingest_web_forms
+01_ingest_inventory_source ──► 02_ingest_vendors ──► 03_ingest_shipments
+                                            │
+04a_transform_silver_layer
+04b_transform_finance_invoices
+04c_transform_vendor_compliance
+04c_join_finance_with_vendors
+04d_transform_web_forms
+04e_transform_all_clean
+               │
+        05_write_gold_summary
+```
+
+Each task runs on `Bruce Jenks's Cluster` and is defined as a modular `.py` notebook:
+
+- **Bronze ingest:** mock data for inventory, finance, compliance, web forms  
+- **Silver:** enrichment and joins  
+- **Gold:** final aggregated table `vendor_summary_clean`
+
+📍 See actual code under:  
+- `pipeline1_batch_delta/bronze/`  
+- `pipeline1_batch_delta/silver/`  
+- `pipeline1_batch_delta/gold/`
+
 ## 📂 Pipeline Stage Documentation
 
 - [🔶 Bronze Layer](pipeline1_batch_delta/bronze/README.md)
