@@ -1,0 +1,11 @@
+{
+	"name": "ls_blob_datalakelv426_adfspipeline1",
+	"properties": {
+		"description": "Parquet with vendor registry data to append into gold summary.",
+		"annotations": [],
+		"type": "AzureBlobFS",
+		"typeProperties": {
+			"url": "https://datalakelv426.dfs.core.windows.net/"
+		}
+	}
+}
