@@ -4,7 +4,7 @@
 		"description": "Testing ADF to Databricks",
 		"activities": [
 			{
-				"name": "Data flow1",
+				"name": "VendorRegistry_Silver_Transform",
 				"type": "ExecuteDataFlow",
 				"dependsOn": [],
 				"policy": {
