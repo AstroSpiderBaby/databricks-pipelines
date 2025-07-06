@@ -1,0 +1,46 @@
+{
+	"name": "vendor_registry_rawingest",
+	"properties": {
+		"description": "Mock data for data integration into Databricks pipeline (jobs)",
+		"linkedServiceName": {
+			"referenceName": "ls_blob_datalakelv426_adfspipeline1",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "vendor_registry_clean.parquet",
+				"fileSystem": "raw-ingest"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": [
+			{
+				"name": "vendor_id",
+				"type": "UTF8"
+			},
+			{
+				"name": "industry",
+				"type": "UTF8"
+			},
+			{
+				"name": "headquarters",
+				"type": "UTF8"
+			},
+			{
+				"name": "on_watchlist",
+				"type": "BOOLEAN"
+			},
+			{
+				"name": "registration_date",
+				"type": "DATE"
+			},
+			{
+				"name": "tier",
+				"type": "UTF8"
+			}
+		]
+	}
+}
