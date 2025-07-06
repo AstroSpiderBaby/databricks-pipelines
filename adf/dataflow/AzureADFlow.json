@@ -13,7 +13,14 @@
 				}
 			],
 			"sinks": [],
-			"transformations": [],
+			"transformations": [
+				{
+					"name": "SelectColumns"
+				},
+				{
+					"name": "AddMetaColumns"
+				}
+			],
 			"scriptLines": [
 				"source(output(",
 				"          vendor_id as string,",
@@ -26,7 +33,19 @@
 				"     allowSchemaDrift: false,",
 				"     validateSchema: true,",
 				"     ignoreNoFilesFound: false,",
-				"     format: 'parquet') ~> AzureADF"
+				"     format: 'parquet') ~> AzureADF",
+				"AddMetaColumns select(mapColumn(",
+				"          vendor_id,",
+				"          industry,",
+				"          headquarters,",
+				"          on_watchlist,",
+				"          registration_date,",
+				"          tier",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> SelectColumns",
+				"AzureADF derive(pipeline_run_metadata = ERROR_FUNCTION(''),",
+				"          registration_date = year(registration_date)) ~> AddMetaColumns"
 			]
 		}
 	}
