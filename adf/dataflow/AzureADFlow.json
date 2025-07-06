@@ -1,5 +1,5 @@
 {
-	"name": "dataflow1",
+	"name": "AzureADFlow",
 	"properties": {
 		"type": "MappingDataFlow",
 		"typeProperties": {
