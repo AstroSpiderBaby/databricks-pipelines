@@ -56,7 +56,7 @@
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true) ~> SelectColumns",
 				"AzureADF derive(registration_date = year(registration_date),",
-				"          column1 = ERROR_FUNCTION('')) ~> AddMetaColumns",
+				"          pipeline_run_metadata = $pipelineRunId) ~> AddMetaColumns",
 				"SelectColumns sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     format: 'parquet',",
