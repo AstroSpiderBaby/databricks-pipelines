@@ -1,0 +1,33 @@
+{
+	"name": "dataflow1",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "vendor_registry_raw_ingest",
+						"type": "DatasetReference"
+					},
+					"name": "AzureADF"
+				}
+			],
+			"sinks": [],
+			"transformations": [],
+			"scriptLines": [
+				"source(output(",
+				"          vendor_id as string,",
+				"          industry as string,",
+				"          headquarters as string,",
+				"          on_watchlist as boolean,",
+				"          registration_date as date,",
+				"          tier as string",
+				"     ),",
+				"     allowSchemaDrift: false,",
+				"     validateSchema: true,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet') ~> AzureADF"
+			]
+		}
+	}
+}
