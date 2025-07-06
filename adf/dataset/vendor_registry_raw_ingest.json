@@ -1,5 +1,5 @@
 {
-	"name": "vendor_registry_rawingest",
+	"name": "vendor_registry_raw_ingest",
 	"properties": {
 		"description": "Mock data for data integration into Databricks pipeline (jobs)",
 		"linkedServiceName": {
