@@ -1,0 +1,343 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "AstrosFactory"
+		},
+		"AzureDatabricksLinkedService_accessToken": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accessToken' of 'AzureDatabricksLinkedService'"
+		},
+		"AzureDataLakeStorage1_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://datalakelv426.dfs.core.windows.net/"
+		},
+		"ls_blob_datalakelv426_adfspipeline1_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://datalakelv426.dfs.core.windows.net/"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureDataLakeStorage1')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Linked Service between ADF and Azure",
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('AzureDataLakeStorage1_properties_typeProperties_url')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureDatabricksLinkedService')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Linked service between ADF and Databricks",
+				"annotations": [],
+				"type": "AzureDatabricksDeltaLake",
+				"typeProperties": {
+					"domain": "https://adb-1601566136493861.1.azuredatabricks.net",
+					"clusterId": "0507-195306-4he10d14",
+					"accessToken": {
+						"type": "SecureString",
+						"value": "[parameters('AzureDatabricksLinkedService_accessToken')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_blob_datalakelv426_adfspipeline1')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Parquet with vendor registry data to append into gold summary.",
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('ls_blob_datalakelv426_adfspipeline1_properties_typeProperties_url')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureDatabricksDeltaLakeDataset1')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureDatabricksLinkedService",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureDatabricksDeltaLakeDataset",
+				"typeProperties": {
+					"database": "default",
+					"table": "adf_mock"
+				},
+				"schema": [
+					{
+						"name": "Social_Security",
+						"type": "string"
+					},
+					{
+						"name": "Date_of_Birth",
+						"type": "string"
+					},
+					{
+						"name": "First_Name",
+						"type": "string"
+					},
+					{
+						"name": "Last_Name",
+						"type": "string"
+					},
+					{
+						"name": "Doctor",
+						"type": "string"
+					},
+					{
+						"name": "Facility",
+						"type": "string"
+					},
+					{
+						"name": "Visit_Date",
+						"type": "string"
+					},
+					{
+						"name": "Diagnosis",
+						"type": "string"
+					},
+					{
+						"name": "Comments",
+						"type": "string"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureDatabricksLinkedService')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Vendor_Registry_Silver')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_blob_datalakelv426_adfspipeline1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileSystem": "adf-silver"
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_blob_datalakelv426_adfspipeline1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/vendor_registry_raw_ingest')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Mock data for data integration into Databricks pipeline (jobs)",
+				"linkedServiceName": {
+					"referenceName": "ls_blob_datalakelv426_adfspipeline1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "vendor_registry_clean.parquet",
+						"fileSystem": "raw-ingest"
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": [
+					{
+						"name": "vendor_id",
+						"type": "UTF8"
+					},
+					{
+						"name": "industry",
+						"type": "UTF8"
+					},
+					{
+						"name": "headquarters",
+						"type": "UTF8"
+					},
+					{
+						"name": "on_watchlist",
+						"type": "BOOLEAN"
+					},
+					{
+						"name": "registration_date",
+						"type": "DATE"
+					},
+					{
+						"name": "tier",
+						"type": "UTF8"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_blob_datalakelv426_adfspipeline1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureFlowADF')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "vendor_registry_raw_ingest",
+								"type": "DatasetReference"
+							},
+							"name": "AzureADF"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "Vendor_Registry_Silver",
+								"type": "DatasetReference"
+							},
+							"name": "VendorRegistrySilver"
+						}
+					],
+					"transformations": [
+						{
+							"name": "SelectColumns"
+						},
+						{
+							"name": "AddMetaColumns"
+						}
+					],
+					"scriptLines": [
+						"parameters{",
+						"     pipelineRunId as string",
+						"}",
+						"source(output(",
+						"          vendor_id as string,",
+						"          industry as string,",
+						"          headquarters as string,",
+						"          on_watchlist as boolean,",
+						"          registration_date as date,",
+						"          tier as string",
+						"     ),",
+						"     allowSchemaDrift: false,",
+						"     validateSchema: true,",
+						"     ignoreNoFilesFound: false,",
+						"     format: 'parquet') ~> AzureADF",
+						"AddMetaColumns select(mapColumn(",
+						"          vendor_id,",
+						"          industry,",
+						"          headquarters,",
+						"          on_watchlist,",
+						"          registration_date,",
+						"          tier",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> SelectColumns",
+						"AzureADF derive(registration_date = year(registration_date),",
+						"          pipeline_run_metadata = $pipelineRunId) ~> AddMetaColumns",
+						"SelectColumns sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'parquet',",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> VendorRegistrySilver"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/vendor_registry_raw_ingest')]",
+				"[concat(variables('factoryId'), '/datasets/Vendor_Registry_Silver')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/astrospipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Testing ADF to Databricks",
+				"activities": [
+					{
+						"name": "Data flow1",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "AzureFlowADF",
+								"type": "DataFlowReference",
+								"parameters": {
+									"pipelineRunId": {
+										"value": "'@{pipeline().RunId}'",
+										"type": "Expression"
+									}
+								},
+								"datasetParameters": {
+									"AzureADF": {},
+									"VendorRegistrySilver": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"pipelineRunId": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2025-01-16T00:02:06Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/AzureFlowADF')]"
+			]
+		}
+	]
+}
