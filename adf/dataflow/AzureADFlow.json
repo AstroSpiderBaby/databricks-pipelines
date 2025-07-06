@@ -22,6 +22,9 @@
 				}
 			],
 			"scriptLines": [
+				"parameters{",
+				"     pipelineRunId as string",
+				"}",
 				"source(output(",
 				"          vendor_id as string,",
 				"          industry as string,",
