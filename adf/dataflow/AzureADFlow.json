@@ -12,7 +12,15 @@
 					"name": "AzureADF"
 				}
 			],
-			"sinks": [],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "Vendor_Registry_Silver",
+						"type": "DatasetReference"
+					},
+					"name": "VendorRegistrySilver"
+				}
+			],
 			"transformations": [
 				{
 					"name": "SelectColumns"
@@ -47,8 +55,16 @@
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true) ~> SelectColumns",
-				"AzureADF derive(pipeline_run_metadata = ERROR_FUNCTION(''),",
-				"          registration_date = year(registration_date)) ~> AddMetaColumns"
+				"AzureADF derive(pipeline_run_metadata = $pipelineRunId,",
+				"          registration_date = year(registration_date)) ~> AddMetaColumns",
+				"SelectColumns sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'parquet',",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> VendorRegistrySilver"
 			]
 		}
 	}
