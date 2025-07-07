@@ -58,7 +58,7 @@
 				"          tier,",
 				"          pipeline_run_metadata,",
 				"          {sourcetag } = {source_tag },",
-				"          ingestion_timestamp",
+				"          ingestiontimestamp = ingestion_timestamp",
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true) ~> SelectColumns",
