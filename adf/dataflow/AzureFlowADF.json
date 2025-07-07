@@ -31,7 +31,7 @@
 			],
 			"scriptLines": [
 				"parameters{",
-				"     pipelineRunId as string ('debug_run_001')",
+				"     pipelineRunId as string",
 				"}",
 				"source(output(",
 				"          vendor_id as string,",
