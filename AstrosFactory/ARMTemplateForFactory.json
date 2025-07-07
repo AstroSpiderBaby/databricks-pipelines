@@ -70,11 +70,6 @@
 				"policy": {
 					"elapsedTimeMetric": {}
 				},
-				"parameters": {
-					"pipelineRunId": {
-						"type": "string"
-					}
-				},
 				"annotations": [],
 				"lastPublishTime": "2025-01-16T00:02:06Z"
 			},
@@ -284,7 +279,11 @@
 								"referenceName": "Vendor_Registry_Silver",
 								"type": "DatasetReference"
 							},
-							"name": "VendorRegistrySilver"
+							"name": "VendorRegistrySilver",
+							"rejectedDataLinkedService": {
+								"referenceName": "ls_blob_datalakelv426_adfspipeline1",
+								"type": "LinkedServiceReference"
+							}
 						}
 					],
 					"transformations": [
@@ -297,7 +296,7 @@
 					],
 					"scriptLines": [
 						"parameters{",
-						"     pipelineRunId as string",
+						"     pipelineRunId as string ('debug_test')",
 						"}",
 						"source(output(",
 						"          vendor_id as string,",
@@ -315,13 +314,18 @@
 						"          vendor_id,",
 						"          industry,",
 						"          headquarters,",
-						"          on_watchlist,",
-						"          registration_date,",
-						"          tier",
+						"          onwatchlist = on_watchlist,",
+						"          registrationdate = registration_date,",
+						"          tier,",
+						"          ingestion_timestamp,",
+						"          source_tag,",
+						"          pipeline_run_metadata",
 						"     ),",
 						"     skipDuplicateMapInputs: true,",
 						"     skipDuplicateMapOutputs: true) ~> SelectColumns",
 						"AzureADF derive(registration_date = year(registration_date),",
+						"          ingestion_timestamp = currentUTC(),",
+						"          source_tag = 'vendor_registry_adf',",
 						"          pipeline_run_metadata = $pipelineRunId) ~> AddMetaColumns",
 						"SelectColumns sink(allowSchemaDrift: true,",
 						"     validateSchema: false,",
@@ -336,7 +340,8 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/vendor_registry_raw_ingest')]",
-				"[concat(variables('factoryId'), '/datasets/Vendor_Registry_Silver')]"
+				"[concat(variables('factoryId'), '/datasets/Vendor_Registry_Silver')]",
+				"[concat(variables('factoryId'), '/linkedServices/ls_blob_datalakelv426_adfspipeline1')]"
 			]
 		}
 	]
