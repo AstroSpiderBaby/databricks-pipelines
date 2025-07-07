@@ -18,7 +18,11 @@
 						"referenceName": "Vendor_Registry_Silver",
 						"type": "DatasetReference"
 					},
-					"name": "VendorRegistrySilver"
+					"name": "VendorRegistrySilver",
+					"rejectedDataLinkedService": {
+						"referenceName": "ls_blob_datalakelv426_adfspipeline1",
+						"type": "LinkedServiceReference"
+					}
 				}
 			],
 			"transformations": [
