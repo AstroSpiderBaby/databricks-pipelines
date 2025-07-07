@@ -18,13 +18,7 @@
 				"typeProperties": {
 					"dataflow": {
 						"referenceName": "AzureFlowADF",
-						"type": "DataFlowReference",
-						"parameters": {
-							"pipelineRunId": {
-								"value": "'@{pipeline().RunId}'",
-								"type": "Expression"
-							}
-						}
+						"type": "DataFlowReference"
 					},
 					"compute": {
 						"coreCount": 8,
@@ -34,11 +28,6 @@
 				}
 			}
 		],
-		"parameters": {
-			"pipelineRunId": {
-				"type": "string"
-			}
-		},
 		"annotations": [],
 		"lastPublishTime": "2025-01-16T00:02:06Z"
 	},
