@@ -1,7 +1,10 @@
+
 # 🚀 Databricks Pipelines
 
-This repository contains modular data pipelines built using **Azure Databricks**, **Azure Blob Storage**, **Delta Lake**, and **Workflows**.  
-The goal is to explore multiple strategies for handling **batch ingestion and processing** using clean, cost-effective patterns that can scale to streaming with Autoloader in future iterations.
+This repository contains modular data pipelines built using **Azure Databricks**, **Azure Blob Storage**, **Delta Lake**, **Workflows**, and **Azure Data Factory (ADF)**.  
+The goal is to explore multiple strategies for handling **batch ingestion and processing**, using clean, cost-effective patterns that can scale to **streaming with Autoloader** and **external orchestration with ADF** in future iterations.
+
+**ADF is currently used to ingest external registry data into Azure Blob Storage, where it is picked up and processed through the Delta Lake pipeline layers.**
 
 ## 🤝 Contributing
 Contributions are welcome! Please review [CONTRIBUTING.md](./CONTRIBUTING.md) before submitting pull requests.
@@ -31,13 +34,14 @@ Contributions are welcome! Please review [CONTRIBUTING.md](./CONTRIBUTING.md) be
 ```
 databricks-pipelines/
 ├── pipeline1_batch_delta/
-│   ├── bronze/
-│   ├── silver/
-│   ├── gold/
-│   ├── transform/
-│   ├── utils/
-│   └── docs/
-├── common/
+│   ├── bronze/                 # Raw ingestion layer
+│   ├── silver/                 # Cleaned + enriched data
+│   │   └── adf_data/           # Subfolder for ADF-sourced registry inputs
+│   ├── gold/                   # Aggregated and summarized outputs
+│   ├── transform/              # Optional staging or enrichment logic
+│   ├── utils/                  # Shared functions (e.g., upsert, write, SQL, mount)
+│   └── docs/                   # Design notes or metadata if needed
+├── common/                    # Shared modules across pipelines (planned)
 ├── LICENSE
 └── README.md
 ```
@@ -46,92 +50,95 @@ databricks-pipelines/
 
 ## 🔁 Pipeline Variants (Planned)
 
-| Pipeline                      | Features                                                |
-|------------------------------|---------------------------------------------------------|
-| `pipeline1_batch_delta`      | Batch ingest → Enrich → Aggregate → Workflow-triggered |
-| `pipeline2_modular_functions`| Shared function logic, reusable modules                |
-| `pipeline3_autoloader_batch` | Uses Autoloader with manual trigger                    |
-| `pipeline4_streaming_mode`   | Future: Continuous ingestion with streaming             |
+| Pipeline                      | Features                                                                 |
+|------------------------------|--------------------------------------------------------------------------|
+| `pipeline1_batch_delta`      | Batch ingestion from multiple sources (ADF output, Azure Blob, on-prem SQL via JDBC) → Silver enrichment → Gold aggregation with run tracking |
+| `FUTURE-pipeline2_modular_functions`| Centralized utility functions (upsert, write, mount, SQL) for reuse across stages |
+| `FUTURE-pipeline3_autoloader_batch` | Planned: File-based batch ingestion using Autoloader with manual trigger |
+| `FUTURE-pipeline4_streaming_mode`   | Future: Continuous ingestion and transformation using Structured Streaming |
 
 ---
 
 ## 🧰 Technologies
 
-- Azure Databricks (Runtime 15.4)
-- Azure Data Factory (ADF)
-- SQL Server On-Prem
-- Delta Lake (Bronze, Silver, Gold architecture)
-- Azure Blob Storage (mounted via Azure Key Vault + Secret Scope)
-- PySpark
-- Databricks Workflows
-- GitHub (Databricks Repos integration)
+### 🔹 Compute & Processing
+- **Azure Databricks** (Runtime 15.4): Unified analytics platform for Spark-based processing
+- **PySpark**: Data transformation and enrichment logic written in Python
+
+### 🔹 Ingestion & Integration
+- **Azure Data Factory (ADF)**: Transfers external vendor registry data into Blob storage
+- **SQL Server (On-Prem)**: Pulled securely using JDBC + Ngrok tunneling
+- **Azure Blob Storage**: Landing zone for raw and ADF files, mounted via Key Vault
+
+### 🔹 Data Management
+- **Delta Lake**: Bronze, Silver, and Gold layer architecture with ACID transaction support
+- **Databricks Workflows**: Visual pipeline orchestration and dependency tracking
+
+### 🔹 Source Control & Security
+- **GitHub**: Integrated via Databricks Repos for version control and code collaboration
+- **Azure Key Vault + Databricks Secret Scopes**: Secure handling of secrets
 
 ---
 
 ## 📊 Pipeline Flow
 
 ```
-Raw CSVs (Bronze)
-     │
-     ▼
-transform_finance_invoices.py   +   silver_vendor_compliance.py
-     │                                      │
-     ▼                                      ▼
-finance_invoices_v2                vendor_compliance_clean
-     │
-     ▼
-silver_enrichment.py  ──► finance_with_vendor_info
-     │
-     ▼
-04e_transform_all_clean.py ──► final_vendor_summary_prep
-     │
-     ▼
-gold_summary.py ──► vendor_summary_clean (Gold)
+Azure Blob + ADF + SQL Server
+│
+▼
+🟫 Bronze Layer (Ingestion)
+  - bronze_ingest_finance_invoices.py ← Azure Blob (CSV)
+  - bronze_ingest_web_forms.py ← External ingest (JSON)
+  - bronze_ingest_inventory.py
+  - bronze_ingest_vendors.py
+  - bronze_ingest_shipments.py
+  - bronze_ingest_vendor_compliance.py ← SQL Server via JDBC
+
+⚪ Silver Layer (Cleansing & Enrichment)
+  - silver_clean_finance_invoices.py → finance_invoices_v2
+  - silver_clean_web_forms.py → web_forms_clean
+  - silver_join_inventory_shipments.py → inventory_shipments_joined_clean
+  - silver_finance_vendor_join.py → finance_with_vendor_info
+  - silver_join_finance_registry.py → vendor_registry_clean (from ADF)
+  - silver_finalize_vendor_summary.py → final_vendor_summary_prep
+
+🥇 Gold Layer (Aggregation & Output)
+  - gold_write_vendor_summary.py → vendor_summary_enriched (partitioned by tier)
 ```
-
----
-
 
 ---
 
 ## 🔁 Databricks Workflow Orchestration
 
-This project uses a visual **Databricks Workflow** to orchestrate the full pipeline execution in a modular, dependency-driven manner:
+This project uses a visual **Databricks Workflow** to orchestrate full pipeline execution in a modular, dependency-driven manner.
 
-```text
-bronze → silver → gold
-     ↓        ↓        ↓
-mock_ingest  enrich    summarize
+```
+bronze_ingest_finance_invoices
+bronze_ingest_inventory
+bronze_ingest_vendors
+bronze_ingest_shipments
+bronze_ingest_web_forms
+    │
+silver_clean_finance_invoices
+silver_clean_web_forms
+silver_clean_vendor_compliance
+    │
+silver_join_inventory_shipments
+silver_join_finance_registry
+silver_finalize_vendor_summary
+    │
+gold_write_vendor_summary
 ```
 
-### Workflow: `pipeline1_batch_delta_workflow`
+📍 Source notebooks are located in:
 
-```text
-00_ingest_finance_invoices
-00a_ingest_vendor_compliance
-00b_ingest_web_forms
-01_ingest_inventory_source ──► 02_ingest_vendors ──► 03_ingest_shipments
-                                            │
-04a_transform_silver_layer
-04b_transform_finance_invoices
-04c_transform_vendor_compliance
-04c_join_finance_with_vendors
-04d_transform_web_forms
-04e_transform_all_clean
-               │
-        05_write_gold_summary
-```
-
-Each task runs on `Bruce Jenks's Cluster` and is defined as a modular `.py` notebook:
-
-- **Bronze ingest:** mock data for inventory, finance, compliance, web forms  
-- **Silver:** enrichment and joins  
-- **Gold:** final aggregated table `vendor_summary_clean`
-
-📍 See actual code under:  
-- `pipeline1_batch_delta/bronze/`  
-- `pipeline1_batch_delta/silver/`  
+- `pipeline1_batch_delta/bronze/`
+- `pipeline1_batch_delta/silver/`
+- `pipeline1_batch_delta/silver/adf_data/`
 - `pipeline1_batch_delta/gold/`
+- `pipeline1_batch_delta/utils/`
+
+---
 
 ## 📂 Pipeline Stage Documentation
 
@@ -144,38 +151,51 @@ Each task runs on `Bruce Jenks's Cluster` and is defined as a modular `.py` note
 
 ## 📈 Gold Layer Output
 
-The Gold layer produces a single Delta table:
+The Gold layer produces a single enriched and partitioned Delta table:
 
-### `vendor_summary_clean`
+### `vendor_summary_enriched`
 
 | Column Name         | Description                                            |
 |---------------------|--------------------------------------------------------|
 | `vendor_id`         | Normalized vendor identifier                           |
-| `vendor_name`       | Human-readable vendor name (e.g., "Vendor A")          |
+| `vendor_name`       | Human-readable vendor name                             |
 | `total_invoices`    | Count of unique invoices per vendor                    |
 | `latest_due_date`   | Most recent due date across all invoices               |
 | `latest_invoice_date` | Most recent invoice date                             |
 | `last_audit_date`   | Most recent compliance audit                           |
 | `compliance_score`  | Latest compliance score (0–100 scale)                  |
-| `compliance_status` | "Compliant", "At Risk", or "Suspended"                 |
+| `compliance_status` | Compliance category ("Compliant", "At Risk", etc.)     |
+| `industry`          | Vendor industry from registry                          |
+| `headquarters`      | Vendor headquarters city                               |
+| `onwatchlist`       | Boolean flag for watchlist status                      |
+| `registration_date` | Registration year of vendor (for partitioning)         |
+| `tier`              | Tier classification from ADF source                    |
+| `ingestion_timestamp` | Auto-generated pipeline ingestion timestamp          |
 
 ---
 
 ## 🧪 Testing and Mock Data
 
-Mock CSV files are stored in mounted paths like `/mnt/raw-ingest/finance_invoice_data.csv`.  
-They are processed by the following scripts:
+Mock files are stored in `/mnt/raw-ingest/` and `/mnt/lv426-adf-data/` (Parquet).  
+Data is processed and cleaned using the following notebooks:
 
-- Ingestion:
-  - `mock_finance_invoices.py`
-  - `mock_web_forms.py`
-- Silver Cleaning:
-  - `transform_finance_invoices.py` → `finance_invoices_v2`
-  - `silver_vendor_compliance.py` → `vendor_compliance_clean`
-  - `silver_enrichment.py` → joins vendor name
-  - `04e_transform_all_clean.py` → `final_vendor_summary_prep`
-- Final Gold Output:
-  - `gold_summary.py` → `vendor_summary_clean`
+### Ingestion (Bronze Layer)
+- `bronze_ingest_finance_invoices.py`
+- `bronze_ingest_web_forms.py`
+- `bronze_ingest_inventory.py`
+- `bronze_ingest_vendors.py`
+- `bronze_ingest_shipments.py`
+
+### Silver Cleaning & Joins
+- `silver_clean_finance_invoices.py`
+- `silver_clean_web_forms.py`
+- `silver_clean_vendor_compliance.py`
+- `silver_join_inventory_shipments.py`
+- `silver_finalize_vendor_summary.py`
+- `silver_join_finance_registry.py` ← (includes ADF data)
+
+### Final Gold Output
+- `gold_write_vendor_summary.py` → writes `vendor_summary_enriched`
 
 ---
 
@@ -188,7 +208,6 @@ This project connects to a local SQL Server using:
 - Ngrok to tunnel `localhost:1433`
 
 **Notebook Example (`utils/sql_connector.py`):**
-
 ```python
 jdbc_url = dbutils.secrets.get(scope="databricks-secrets-lv426", key="sql-jdbc-url")
 connection_properties = {
@@ -196,7 +215,6 @@ connection_properties = {
     "password": dbutils.secrets.get(scope="databricks-secrets-lv426", key="sql-password"),
     "driver": "com.microsoft.sqlserver.jdbc.SQLServerDriver"
 }
-
 df = spark.read.jdbc(url=jdbc_url, table="INFORMATION_SCHEMA.TABLES", properties=connection_properties)
 ```
 
@@ -254,4 +272,4 @@ Run the notebooks in order (Databricks Repos or VS Code):
 
 MIT License  
 Maintained by AstroSpiderBaby  
-_Last updated: July 4, 2025_
+_Last updated: {date.today().strftime('%B %d, %Y')}_
