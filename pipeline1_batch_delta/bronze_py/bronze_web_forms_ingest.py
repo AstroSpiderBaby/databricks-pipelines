@@ -1,0 +1,34 @@
+"""
+bronze_web_forms_ingest.py
+
+Ingests web form submission data from JSON (multiline) stored in Azure Blob Storage.
+Writes raw data to the Bronze Delta Lake layer with source tracking metadata.
+"""
+
+from pyspark.sql import SparkSession
+from utils.write_utils import write_df_to_delta
+from pyspark.sql.functions import input_file_name, lit
+
+# Start Spark session
+spark = SparkSession.builder.getOrCreate()
+
+# Define input and output paths
+input_path = "/mnt/raw-ingest/web_form_submissions.json"
+output_path = "/mnt/delta/bronze/web_forms"
+
+# Load JSON data
+df_web_forms = (
+    spark.read
+        .option("multiline", "true")
+        .json(input_path)
+        .withColumn("source_file", input_file_name())
+        .withColumn("ingestion_type", lit("web_forms"))
+)
+
+# Write to Bronze
+write_df_to_delta(
+    df_web_forms,
+    path=output_path,
+    partitionBy=None,
+    mode="overwrite"
+)
