@@ -1,12 +1,13 @@
 """
 bronze_vendor_compliance_ingest.py
 
-Loads raw vendor compliance CSV data from Azure Blob Storage (mounted)
+Loads raw vendor compliance from sql server onprem)
 and writes it to the Bronze Delta Lake layer.
 """
 
 from pyspark.sql import SparkSession
-from utils.write_utils import write_df_to_delta
+from utils_py import read_sql_table
+from utils_py import write_df_to_delta
 from pyspark.sql.functions import input_file_name, lit
 
 # Start Spark session

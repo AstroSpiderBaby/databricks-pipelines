@@ -13,7 +13,7 @@ Output:
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col
 
-from utils.utils_write_delta import write_df_to_delta
+from utils_py import write_df_to_delta
 
 # Initialize Spark
 spark = SparkSession.builder.getOrCreate()
@@ -35,6 +35,6 @@ silver_df = (
 write_df_to_delta(
     df=silver_df,
     path="/mnt/delta/silver/registry_vendor_silver",
-    partitionBy=None,
+    partition_by=None,
     mode="overwrite"
 )

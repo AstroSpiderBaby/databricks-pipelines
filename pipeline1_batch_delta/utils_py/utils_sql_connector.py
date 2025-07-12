@@ -5,21 +5,11 @@ Securely connects to a SQL Server instance using JDBC and reads tables into Spar
 """
 
 from pyspark.sql import SparkSession
+import dbutils  # For linting/local dev; Databricks injects dbutils automatically
 
-# Set up Spark session
-spark = SparkSession.builder.getOrCreate()
-
-# Define secret scope and keys
-secret_scope = "lv426"
-jdbc_url = dbutils.secrets.get(scope=secret_scope, key="sql-jdbc-url")
-user = dbutils.secrets.get(scope=secret_scope, key="sql-user")
-password = dbutils.secrets.get(scope=secret_scope, key="sql-password")
-
-connection_properties = {
-    "user": user,
-    "password": password,
-    "driver": "com.microsoft.sqlserver.jdbc.SQLServerDriver"
-}
+def get_spark():
+    """Initialize and return a SparkSession."""
+    return SparkSession.builder.getOrCreate()
 
 def read_sql_table(table_name: str):
     """
@@ -31,4 +21,17 @@ def read_sql_table(table_name: str):
     Returns:
         DataFrame: Spark DataFrame containing the table data.
     """
+    spark = get_spark()
+
+    secret_scope = "lv426"
+    jdbc_url = dbutils.secrets.get(scope=secret_scope, key="sql-jdbc-url")
+    user = dbutils.secrets.get(scope=secret_scope, key="sql-user")
+    password = dbutils.secrets.get(scope=secret_scope, key="sql-password")
+
+    connection_properties = {
+        "user": user,
+        "password": password,
+        "driver": "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+    }
+
     return spark.read.jdbc(url=jdbc_url, table=table_name, properties=connection_properties)

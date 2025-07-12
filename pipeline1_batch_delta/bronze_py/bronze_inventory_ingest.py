@@ -5,7 +5,7 @@ Ingests raw inventory CSV data from Blob Storage into Bronze Delta Lake.
 """
 
 from pyspark.sql import SparkSession
-from utils.utils_write_delta import write_df_to_delta
+from utils_py import write_df_to_delta
 
 spark = SparkSession.builder.getOrCreate()
 

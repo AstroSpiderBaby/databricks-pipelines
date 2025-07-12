@@ -6,7 +6,7 @@ and writes it to the Bronze Delta Lake layer.
 """
 
 from pyspark.sql import SparkSession
-from utils.write_utils import write_df_to_delta
+from utils_py import write_df_to_delta
 from pyspark.sql.functions import input_file_name, lit
 
 # Start Spark session
@@ -30,6 +30,6 @@ df_vendors = (
 write_df_to_delta(
     df_vendors,
     path=output_path,
-    partitionBy=None,
+    partition_by=None,
     mode="overwrite"
 )
