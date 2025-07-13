@@ -7,7 +7,7 @@ Robust utility to write Spark DataFrames to Delta Lake with logging, partitionin
 from pyspark.sql import DataFrame, SparkSession
 from typing import Optional, List
 
-def write_df_to_delta(
+def write_to_delta(
     df: DataFrame,
     path: str,
     mode: str = "overwrite",

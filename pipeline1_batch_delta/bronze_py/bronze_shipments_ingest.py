@@ -4,10 +4,13 @@ bronze_shipments_ingest.py
 Ingests raw shipment CSV data from Azure Blob Storage (mounted)
 and writes it to the Bronze Delta Lake layer.
 """
+import sys
+sys.path.append("/Workspace/Repos/brucejenks@live.com/databricks-pipelines/pipeline1_batch_delta")
+
+from utils_py.utils_write_delta import write_to_delta
 
 from pyspark.sql import SparkSession
-from utils_py import write_df_to_delta
-from pyspark.sql.functions import input_file_name, lit
+
 
 # Initialize Spark session
 spark = SparkSession.builder.getOrCreate()
@@ -27,7 +30,7 @@ df_shipments = (
 )
 
 # Write to Bronze
-write_df_to_delta(
+write_to_delta(
     df_shipments,
     path=output_path,
     partition_by=None,
