@@ -1,36 +1,22 @@
-"""
-silver_finance_invoices_clean.py
-
-Cleans and enriches raw finance invoice data from Bronze and prepares it for Silver.
-"""
-
-import sys
-sys.path.append("/Workspace/Repos/brucejenks@live.com/databricks-pipelines/pipeline1_batch_delta")
-
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, to_date, upper, trim, when
+from pyspark.sql.functions import col, to_date, upper, trim, when, input_file_name, lit
 from pyspark.sql.types import IntegerType
 
-# Start Spark session
 spark = SparkSession.builder.getOrCreate()
 
-# Input and output paths
-input_path = "/mnt/delta/bronze/bronze_finance_invoices"
-output_path = "/mnt/delta/silver/silver_finance_invoices_clean"
+# Load Bronze data
+df = spark.read.format("delta").load("/mnt/delta/bronze/finance_invoices")
 
-# Step 1: Load Bronze data
-df = spark.read.format("delta").load(input_path)
-
-# Step 2: Clean fields
+# Step 1: Clean columns
 df_clean = (
     df.withColumn("vendor", upper(trim(col("vendor"))))
-      .withColumn("invoice_date", to_date(col("invoice_date")))
-      .withColumn("due_date", to_date(col("due_date")))
+      .withColumn("invoice_date", to_date("invoice_date"))
+      .withColumn("due_date", to_date("due_date"))
       .withColumn("paid_flag", when(col("paid") == "Yes", 1).otherwise(0).cast(IntegerType()))
       .drop("paid", "vendor_name", "rating", "location")
 )
 
-# Step 3: Vendor mapping
+# Step 2: Vendor map
 vendor_map = [
     ("WOLFE LLC", "V010"),
     ("MOORE-BERNARD", "V008"),
@@ -43,19 +29,18 @@ vendor_map = [
     ("WILLIAMS AND SONS", "V009"),
     ("GALLOWAY-WYATT", "V005"),
 ]
-
 df_map = spark.createDataFrame(vendor_map, ["vendor", "vendor_id"])
 
-# Step 4: Join
-df_final = df_clean.join(df_map, on="vendor", how="inner")
+# Step 3: Join and keep metadata
+df_final = df_clean.join(df_map, on="vendor", how="inner") \
+    .select(
+        "vendor_id", "invoice_id", "amount_usd", "invoice_date", "due_date",
+        "paid_flag", "source_file", "ingestion_type"
+    )
 
-# Step 5: Select + reorder columns
-df_final = df_final.select(
-    "vendor_id", "invoice_id", "amount_usd", "invoice_date", "due_date",
-    "paid_flag", "source_file", "ingestion_type"
-)
+# Step 4: Write to Silver
+output_path = "/mnt/delta/silver/finance_invoices_v2"
 
-# Step 6: Write to Silver
 df_final.write.format("delta") \
     .mode("overwrite") \
     .option("overwriteSchema", "true") \
