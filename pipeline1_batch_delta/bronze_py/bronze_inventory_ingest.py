@@ -21,4 +21,13 @@ df_inventory = (
         .csv(inventory_path)
 )
 
-write_df_to_delta(df_inventory, output_path)
+write_to_delta(
+    df=df_inventory,
+    path=output_path,
+    partition_by=None,
+    mode="overwrite",
+    merge_schema=True,
+    register_table=True,
+    dry_run=False,
+    verbose=True
+)
