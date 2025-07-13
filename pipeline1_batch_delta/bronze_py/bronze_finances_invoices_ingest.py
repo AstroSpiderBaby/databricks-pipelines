@@ -7,6 +7,7 @@ Loads raw invoice CSV from Azure Blob Storage (mounted) into Bronze Delta Lake.
 import sys
 sys.path.append("/Workspace/Repos/brucejenks@live.com/databricks-pipelines/pipeline1_batch_delta")
 
+from pyspark.sql import SparkSession
 from utils_py.utils_write_delta import write_to_delta
 
 # Start Spark session
