@@ -16,7 +16,7 @@ from pyspark.sql import SparkSession
 spark = SparkSession.builder.getOrCreate()
 
 # Define input and output paths
-input_path = "/mnt/raw-ingest/shipments_data.csv"
+input_path = "dbfs:/FileStore/pipeline1_batch_delta/moc_source_b/Shipments.csv"
 output_path = "/mnt/delta/bronze/shipments"
 
 # Read CSV file
