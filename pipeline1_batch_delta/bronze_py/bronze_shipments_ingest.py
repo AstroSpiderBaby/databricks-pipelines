@@ -6,7 +6,9 @@ and writes it to the Bronze Delta Lake layer.
 """
 import sys
 sys.path.append("/Workspace/Repos/brucejenks@live.com/databricks-pipelines/pipeline1_batch_delta")
-from pyspark.sql.functions import input_file_name
+
+from pyspark.sql.functions import input_file_name, lit
+
 from utils_py.utils_write_delta import write_to_delta
 
 from pyspark.sql import SparkSession
