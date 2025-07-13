@@ -1,43 +1,58 @@
 """
 vendor_registry_silver.py
 
-Cleans ADF-sourced vendor registry data and writes it to Silver Delta Lake.
+Cleans ADF-sourced vendor registry data and writes it to Silver Delta Lake using hash-based upsert.
 
 Input:
-- /mnt/delta/bronze/registry_adf_source (Bronze)
+- dbfs:/mnt/adf-silver/ (Parquet from ADF)
 
 Output:
-- /mnt/delta/silver/registry_vendor_silver (Silver)
+- /mnt/delta/silver/vendor_registry_clean
 """
-
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import col
 
 import sys
 sys.path.append("/Workspace/Repos/brucejenks@live.com/databricks-pipelines/pipeline1_batch_delta")
 
-from utils_py.utils_write_delta import write_to_delta
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, sha2, concat_ws, current_timestamp
+from utils.utils_upsert_with_hashstring import upsert_with_hashstring
 
-# Initialize Spark
+# Create Spark session
 spark = SparkSession.builder.getOrCreate()
 
-# Load Bronze table
-bronze_df = spark.read.format("delta").load("/mnt/delta/bronze/registry_adf_source")
+# Read raw ADF Parquet
+df_raw = spark.read.format("parquet").load("dbfs:/mnt/adf-silver")
 
-# Clean and transform
-silver_df = (
-    bronze_df
-    .withColumnRenamed("VendorID", "vendor_id")
-    .withColumnRenamed("VendorName", "vendor_name")
-    .withColumnRenamed("IsActive", "is_active")
-    .withColumn("vendor_name", col("vendor_name").cast("string"))
-    .dropna(subset=["vendor_id", "vendor_name"])
+# Clean and select relevant columns
+df_clean = df_raw.select(
+    "vendor_id", "industry", "headquarters", "onwatchlist",
+    "registrationdate", "tier"
+).dropna(subset=["vendor_id"])
+
+# Add hashstring for upsert logic
+df_hashed = (
+    df_clean.withColumn(
+        "hashstring",
+        sha2(concat_ws("||", *[
+            col("vendor_id"),
+            col("industry"),
+            col("headquarters"),
+            col("onwatchlist"),
+            col("registrationdate"),
+            col("tier")
+        ]), 256)
+    ).withColumn("ingestion_timestamp", current_timestamp())
 )
 
-# Write to Silver
-write_to_delta(
-    df=silver_df,
-    path="/mnt/delta/silver/registry_vendor_silver",
-    partition_by=None,
-    mode="overwrite"
+# Define Silver output path
+target_path = "/mnt/delta/silver/vendor_registry_clean"
+
+# Upsert to Delta
+upsert_with_hashstring(
+    df=df_hashed,
+    path=target_path,
+    primary_key="vendor_id",
+    hash_col="hashstring"
 )
+
+print("✅ Vendor registry written to Silver with upsert.")

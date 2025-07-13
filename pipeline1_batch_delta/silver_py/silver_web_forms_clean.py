@@ -1,30 +1,51 @@
 """
 silver_web_forms_clean.py
 
-Processes raw web form submission data from Bronze and cleans up key fields.
+Cleans Bronze-level web form submissions for reporting and enrichment.
 
-- Normalizes data types
-- Extracts relevant form details
-- Drops invalid or null submissions
-- Output: /mnt/delta/silver/web_forms_clean
+- Selects relevant fields
+- Converts timestamp
+- Drops incomplete rows
+- Writes to Silver Delta Layer
 """
 
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, to_date
+from pyspark.sql.functions import to_timestamp
+from pyspark.sql.functions import col
 
-# Create Spark session
+# Initialize Spark session
 spark = SparkSession.builder.getOrCreate()
 
-# Load Bronze-level web forms
-df_raw = spark.read.format("delta").load("/mnt/delta/bronze/web_forms_raw")
+# Load Bronze table
+df_raw = spark.read.format("delta").load("/mnt/delta/bronze/web_form_submissions")
 
-# Clean fields
+# Clean and transform
 df_clean = (
-    df_raw
-    .filter(col("form_id").isNotNull())
-    .withColumn("submission_date", to_date("submission_date", "yyyy-MM-dd"))
-    .dropDuplicates(["form_id"])
+    df_raw.select(
+        "submission_id",
+        "full_name",
+        "email",
+        "phone",
+        "address",
+        "comments",
+        to_timestamp("submitted_at").alias("submitted_at"),
+        "source_file"
+    )
+    .dropna(subset=["submission_id", "submitted_at"])
 )
 
-# Write clean Silver version
-df_clean.write.format("delta").mode("overwrite").save("/mnt/delta/silver/web_forms_clean")
+# Write to Silver
+df_clean.write.format("delta") \
+    .mode("overwrite") \
+    .option("mergeSchema", "true") \
+    .save("/mnt/delta/silver/web_forms_clean")
+
+# Optional SQL registration
+spark.sql("DROP TABLE IF EXISTS web_forms_clean")
+spark.sql("""
+    CREATE TABLE web_forms_clean
+    USING DELTA
+    LOCATION '/mnt/delta/silver/web_forms_clean'
+""")
+
+print("✅ Web forms cleaned and written to Silver successfully.")
