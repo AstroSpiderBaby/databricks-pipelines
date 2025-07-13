@@ -15,7 +15,7 @@ from pyspark.sql.functions import input_file_name, lit
 spark = SparkSession.builder.getOrCreate()
 
 # Define input and output paths
-input_path = "/mnt/raw-ingest/vendors.csv"
+input_path = "dbfs:/FileStore/pipeline1_batch_delta/moc_source_c/Vendors.csv"
 output_path = "/mnt/delta/bronze/vendors"
 
 # Load CSV with metadata
