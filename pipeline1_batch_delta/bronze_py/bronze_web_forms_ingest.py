@@ -15,7 +15,7 @@ from pyspark.sql.functions import input_file_name, lit
 spark = SparkSession.builder.getOrCreate()
 
 # Define input and output paths
-input_path = "/mnt/raw-ingest/web_form_submissions.json"
+input_path = "dbfs:/mnt/external-ingest/web_form_submissions.json"
 output_path = "/mnt/delta/bronze/web_forms"
 
 # Load JSON data
