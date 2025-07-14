@@ -1,7 +1,10 @@
 from pyspark.sql.functions import input_file_name, lit
 
-# Start Spark session
-spark = SparkSession.builder.getOrCreate()
+import sys
+sys.path.append("/Workspace/Repos/brucejenks@live.com/databricks-pipelines/pipeline1_batch_delta")
+
+from pyspark.sql import SparkSession
+from utils_py.utils_write_delta import write_to_delta
 
 # Define paths
 input_path = "/mnt/raw-ingest/finance_invoice_data.csv"
