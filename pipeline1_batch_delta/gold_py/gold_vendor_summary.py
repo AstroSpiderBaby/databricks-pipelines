@@ -43,7 +43,7 @@ df_gold = (
 
 # Write Gold table
 target_path = "/mnt/delta/gold/final_vendor_summary"
-write_df_to_delta(
+write_to_delta(
     df=df_gold,
     path=target_path,
     mode="overwrite",
@@ -61,7 +61,7 @@ df_log = df_gold.select(
 )
 
 log_path = "/mnt/delta/logs/final_vendor_summary_runs"
-write_df_to_delta(
+write_to_delta(
     df=df_log,
     path=log_path,
     mode="append",
