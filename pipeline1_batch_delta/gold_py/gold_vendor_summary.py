@@ -4,7 +4,10 @@ gold_vendor_summary.py
 Generates the final Gold-level vendor summary by aggregating invoices,
 joining compliance and registry info, and writing the result to Delta.
 """
+import sys
+sys.path.append("/Workspace/Repos/brucejenks@live.com/databricks-pipelines/pipeline1_batch_delta")
 
+from utils_py.utils_write_delta import write_to_delta
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, max, countDistinct, current_timestamp
 
