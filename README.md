@@ -1,19 +1,19 @@
 
-# 🚀 Databricks Pipelines
+# 🚀 Databricks Pipelines – Dual Execution (Notebooks + Python)
 
 This repository contains modular data pipelines built using **Azure Databricks**, **Azure Blob Storage**, **Delta Lake**, **Workflows**, and **Azure Data Factory (ADF)**.  
-The goal is to explore multiple strategies for handling **batch ingestion and processing**, using clean, cost-effective patterns that can scale to **streaming with Autoloader** and **external orchestration with ADF** in future iterations.
+It now supports **two modes of execution**:
+- Notebook-driven pipelines (original)
+- Python script–based pipelines (`*_py/` folders) for modular, CI/CD-compatible development.
 
-**ADF is currently used to ingest external registry data into Azure Blob Storage, where it is picked up and processed through the Delta Lake pipeline layers.**
-
-## 🤝 Contributing
-Contributions are welcome! Please review [CONTRIBUTING.md](./CONTRIBUTING.md) before submitting pull requests.
+The goal is to explore multiple strategies for **batch ingestion and processing**, while designing clean, cost-effective pipelines that can scale to streaming with **Autoloader** or orchestration via **ADF**.
 
 ---
 
 ## 📑 Table of Contents
 
 - [📦 Project Structure](#-project-structure)
+- [🚀 Dual Execution Modes](#-dual-execution-modes)
 - [🔁 Pipeline Variants (Planned)](#-pipeline-variants-planned)
 - [🧰 Technologies](#-technologies)
 - [📊 Pipeline Flow](#-pipeline-flow)
@@ -32,21 +32,48 @@ Contributions are welcome! Please review [CONTRIBUTING.md](./CONTRIBUTING.md) be
 ## 📦 Project Structure
 
 ```
-databricks-pipelines/
+databricks-pipelines/ (Notebook Option)
 ├── pipeline1_batch_delta/
-│   ├── bronze/                 # Raw ingestion layer
-│   ├── silver/                 # Cleaned + enriched data
+│   ├── bronze/                 # Notebook-based ingestion layer
+│   ├── silver/                 # Notebook-based transformation and joins
 │   │   └── adf_data/           # Subfolder for ADF-sourced registry inputs
-│   ├── gold/                   # Aggregated and summarized outputs
-│   ├── transform/              # Optional staging or enrichment logic
-│   ├── utils/                  # Shared functions (e.g., upsert, write, SQL, mount)
-│   └── docs/                   # Design notes or metadata if needed
+│   ├── gold/                   # Notebook-based aggregation and output
+│   ├── transform/              # Optional notebook-based enrichment logic
+│   ├── utils/                  # Notebook-based shared functions (e.g., upsert, mount)
+│   └── docs/                   # Design notes or metadata
+├── common/                    # Shared modules across pipelines (planned)
+├── LICENSE
+└── README.md
+```
+
+```
+databricks-pipelines/ (PY Option)
+├── pipeline1_batch_delta/
+│   ├── bronze_py/             # Python-based ingestion scripts
+│   ├── silver_py/             # Python-based transformation and joins
+│   ├── gold_py/               # Python-based aggregation and output
+│   ├── utils_py/              # Python modules for reusable logic
+│   ├── tests/                 # Python or notebook-based test coverage
 ├── common/                    # Shared modules across pipelines (planned)
 ├── LICENSE
 └── README.md
 ```
 
 ---
+🚀 Dual Execution Modes
+You can now run this pipeline in two different ways:
+
+▶️ Option 1: Notebook Workflow
+Execute notebooks in Databricks Repos UI or job tasks:
+bronze/ → silver/ → gold/
+
+▶️ Option 2: Python Job Workflow
+Run the batch1_py_pipeline job in the Databricks Jobs UI, which orchestrates:
+bronze_py/ → silver_py/ → gold_py/
+
+Each script imports reusable functions from utils_py/ for clean modularization.
+---
+
 
 ## 🔁 Pipeline Variants (Planned)
 
