@@ -9,7 +9,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, max, countDistinct, current_timestamp
 
 # Reusable Delta write utility
-from utils_py.utils_write_delta import write_df_to_delta
+from utils_py.utils_write_delta import write_to_delta
 
 # Spark session
 spark = SparkSession.builder.getOrCreate()
