@@ -9,9 +9,6 @@ jobs:
   build-and-publish:
     name: Build and publish Python 📦 distribution to PyPI
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./databricks-pipelines-python
 
     steps:
       - uses: actions/checkout@v3
