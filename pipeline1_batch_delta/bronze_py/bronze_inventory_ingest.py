@@ -1,26 +1,35 @@
 """
 bronze_inventory_ingest.py
 
-Ingests raw inventory CSV data from Blob Storage into Bronze Delta Lake.
+Ingests raw inventory CSV data from Unity Catalog Volume
+and writes it to the Bronze Delta Lake layer.
 """
+
 import sys
 sys.path.append("/Workspace/Repos/brucejenks@live.com/databricks-pipelines/pipeline1_batch_delta")
 
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import lit, col
 from utils_py.utils_write_delta import write_to_delta
 
-from pyspark.sql import SparkSession
+# Initialize Spark session
 spark = SparkSession.builder.getOrCreate()
 
-inventory_path = "dbfs:/FileStore/pipeline1_batch_delta/moc_source_a/Inventory.csv"
-output_path = "/mnt/delta/bronze/inventory"
+# Define input and output paths (using Unity Catalog Volumes)
+input_path = "/Volumes/thebetty/bronze/landing_zone/Inventory.csv"
+output_path = "/Volumes/thebetty/bronze/inventory"
 
+# Read CSV file from volume
 df_inventory = (
     spark.read
         .option("header", "true")
         .option("inferSchema", "true")
-        .csv(inventory_path)
+        .csv(input_path)
+        .withColumn("source_file", col("_metadata.file_path"))
+        .withColumn("ingestion_type", lit("inventory"))
 )
 
+# Write to Delta format in Unity Volume
 write_to_delta(
     df=df_inventory,
     path=output_path,

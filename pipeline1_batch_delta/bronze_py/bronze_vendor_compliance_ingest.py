@@ -1,38 +1,35 @@
 """
 bronze_vendor_compliance_ingest.py
 
-Loads raw vendor compliance from sql server onprem)
-and writes it to the Bronze Delta Lake layer.
+Pulls Vendor Compliance data directly from SQL Server via JDBC
+and writes it to the Bronze Delta Lake layer in Unity Catalog Volumes.
 """
+
 import sys
 sys.path.append("/Workspace/Repos/brucejenks@live.com/databricks-pipelines/pipeline1_batch_delta")
 
 from pyspark.sql import SparkSession
-from utils_py import read_sql_table
-from utils_py import write_to_delta
-from pyspark.sql.functions import input_file_name, lit
+from utils_py.utils_write_delta import write_to_delta
+from utils_py.utils_sql_connector import read_sql_table
+from pyspark.sql.functions import lit
 
-# Start Spark session
-spark = SparkSession.builder.getOrCreate()
-
-# Define input and output paths
-input_path = "/mnt/raw-ingest/vendor_compliance.csv"
-output_path = "/mnt/delta/bronze/vendor_compliance"
-
-# Load CSV with metadata
+# Read table from SQL Server into DataFrame
 df_vendor_compliance = (
-    spark.read
-        .option("header", "true")
-        .option("inferSchema", "true")
-        .csv(input_path)
-        .withColumn("source_file", input_file_name())
-        .withColumn("ingestion_type", lit("vendor_compliance"))
+    read_sql_table("Vendor_Compliance")
+    .withColumn("ingestion_type", lit("vendor_compliance"))
 )
 
-# Write to Bronze
+# Define target Unity Volume path
+output_path = "/Volumes/thebetty/bronze/vendor_compliance"
+
+# Write to Delta
 write_to_delta(
-    df_vendor_compliance,
+    df=df_vendor_compliance,
     path=output_path,
-    partitionBy=None,
-    mode="overwrite"
+    partition_by=None,
+    mode="overwrite",
+    merge_schema=True,
+    register_table=True,
+    dry_run=False,
+    verbose=True
 )

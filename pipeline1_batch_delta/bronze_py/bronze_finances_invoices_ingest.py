@@ -1,35 +1,38 @@
-from pyspark.sql.functions import input_file_name, lit
-import sys
+"""
+bronze_finances_invoices_ingest.py
 
-# Add pipeline path
+Ingests raw financial invoice CSV data from Unity Catalog Volume
+and writes it to the Bronze Delta Lake layer.
+"""
+
+import sys
 sys.path.append("/Workspace/Repos/brucejenks@live.com/databricks-pipelines/pipeline1_batch_delta")
 
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import lit, col
 from utils_py.utils_write_delta import write_to_delta
 
-# Define paths
-input_path = "/mnt/raw-ingest/finance_invoice_data.csv"
+# Initialize Spark session
+spark = SparkSession.builder.getOrCreate()
 
-# Unity Catalog target path and table
-output_path = "/mnt/adf-silver/thebetty/bronze/bronze_finance_invoices"
-full_table_name = "thebetty.bronze.bronze_finance_invoices"
+# Define input and output paths (using Unity Catalog Volumes)
+input_path = "/Volumes/thebetty/bronze/landing_zone/Finances_Invoices.csv"
+output_path = "/Volumes/thebetty/bronze/finances_invoices"
 
-
-# Load CSV and add metadata columns
-df = (
+# Read CSV file from volume
+df_invoices = (
     spark.read
         .option("header", "true")
         .option("inferSchema", "true")
         .csv(input_path)
-        .withColumn("source_file", input_file_name())
-        .withColumn("ingestion_type", lit("finance_invoices"))
+        .withColumn("source_file", col("_metadata.file_path"))
+        .withColumn("ingestion_type", lit("finances_invoices"))
 )
 
-# Write to Unity Catalog Bronze table
+# Write to Delta format in Unity Volume
 write_to_delta(
-    df=df,
+    df=df_invoices,
     path=output_path,
-    full_table_name=full_table_name,
     partition_by=None,
     mode="overwrite",
     merge_schema=True,

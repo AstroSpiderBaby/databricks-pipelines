@@ -4,7 +4,7 @@ from typing import Optional, List
 def write_to_delta(
     df: DataFrame,
     path: str,
-    full_table_name: Optional[str] = None,  # thebetty.bronze.my_table
+    full_table_name: Optional[str] = None,
     mode: str = "overwrite",
     merge_schema: bool = True,
     register_table: bool = True,
@@ -37,8 +37,7 @@ def write_to_delta(
             if path.startswith("/mnt/"):
                 container_and_path = path.replace("/mnt/", "")
                 container, *subdirs = container_and_path.split("/")
-                # ⚠️ Replace this with your actual storage account name
-                storage_account_name = "lv426storageaccount"
+                storage_account_name = "datalakelv426"  # ✅ Your actual storage account
                 abfss_path = f"abfss://{container}@{storage_account_name}.dfs.core.windows.net/" + "/".join(subdirs)
             else:
                 abfss_path = path
@@ -51,7 +50,7 @@ def write_to_delta(
                 LOCATION '{abfss_path}'
             """)
             if verbose:
-                print(f"📚 Table registered: {full_table_name}")
+                print(f"📚 Table registered in Unity Catalog: {full_table_name}")
             return full_table_name
 
         return None

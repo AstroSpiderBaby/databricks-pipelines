@@ -1,32 +1,22 @@
-"""
-Utility Script: utils_sql_connector.py
-
-Securely connects to a SQL Server instance using JDBC and reads tables into Spark DataFrames.
-"""
-
-from pyspark.sql import SparkSession
-import dbutils  # For linting/local dev; Databricks injects dbutils automatically
-
-def get_spark():
-    """Initialize and return a SparkSession."""
-    return SparkSession.builder.getOrCreate()
-
-def read_sql_table(table_name: str):
+def read_sql_table(table_name: str, database: str = "fury161"):
     """
     Reads a SQL Server table into a Spark DataFrame.
-
-    Args:
-        table_name (str): The name of the SQL Server table to read.
-
-    Returns:
-        DataFrame: Spark DataFrame containing the table data.
     """
-    spark = get_spark()
+    from pyspark.sql import SparkSession
+    import builtins
 
-    secret_scope = "lv426"
-    jdbc_url = dbutils.secrets.get(scope=secret_scope, key="sql-jdbc-url")
-    user = dbutils.secrets.get(scope=secret_scope, key="sql-user")
-    password = dbutils.secrets.get(scope=secret_scope, key="sql-password")
+    dbutils = builtins.dbutils if hasattr(builtins, "dbutils") else None
+    if dbutils is None:
+        raise RuntimeError("dbutils not available in this environment.")
+
+    spark = SparkSession.builder.getOrCreate()
+
+    host = "100.100.211.77"
+    port = 1433
+    jdbc_url = f"jdbc:sqlserver://{host}:{port};database={database}"
+
+    user = dbutils.secrets.get(scope="databricks-secrets-lv426", key="sql-user")
+    password = dbutils.secrets.get(scope="databricks-secrets-lv426", key="sql-password")
 
     connection_properties = {
         "user": user,

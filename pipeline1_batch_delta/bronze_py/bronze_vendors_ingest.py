@@ -1,37 +1,42 @@
 """
 bronze_vendors_ingest.py
 
-Loads raw vendor CSV data from Azure Blob Storage (mounted)
+Ingests raw vendor CSV data from Unity Catalog Volume
 and writes it to the Bronze Delta Lake layer.
 """
+
 import sys
 sys.path.append("/Workspace/Repos/brucejenks@live.com/databricks-pipelines/pipeline1_batch_delta")
 
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import lit, col
 from utils_py.utils_write_delta import write_to_delta
-from pyspark.sql.functions import input_file_name, lit
 
-# Start Spark session
+# Initialize Spark session
 spark = SparkSession.builder.getOrCreate()
 
-# Define input and output paths
-input_path = "dbfs:/FileStore/pipeline1_batch_delta/moc_source_c/Vendors.csv"
-output_path = "/mnt/delta/bronze/vendors"
+# Define input and output paths (using Unity Catalog Volumes)
+input_path = "/Volumes/thebetty/bronze/landing_zone/Vendors.csv"
+output_path = "/Volumes/thebetty/bronze/vendors"
 
-# Load CSV with metadata
+# Read CSV file from volume
 df_vendors = (
     spark.read
         .option("header", "true")
         .option("inferSchema", "true")
         .csv(input_path)
-        .withColumn("source_file", input_file_name())
+        .withColumn("source_file", col("_metadata.file_path"))
         .withColumn("ingestion_type", lit("vendors"))
 )
 
-# Write to Bronze
+# Write to Delta format in Unity Volume
 write_to_delta(
-    df_vendors,
+    df=df_vendors,
     path=output_path,
     partition_by=None,
-    mode="overwrite"
+    mode="overwrite",
+    merge_schema=True,
+    register_table=True,
+    dry_run=False,
+    verbose=True
 )
