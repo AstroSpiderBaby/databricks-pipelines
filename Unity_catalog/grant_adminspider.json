@@ -1,0 +1,8 @@
+{
+  "changes": [
+    {
+      "principal": "adminspider@brucejenkslive.onmicrosoft.com",
+      "add": ["ALL_PRIVILEGES"]
+    }
+  ]
+}

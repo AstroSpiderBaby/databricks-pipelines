@@ -1,0 +1,7 @@
+{
+  "name": "lv426_raw_external_location",
+  "url": "abfss://raw-ingest@lv426.dfs.core.windows.net/",
+  "credential_name": "lv426_cred",
+  "comment": "Raw ingest zone for lv426 data lakehouse",
+  "read_only": false
+}
