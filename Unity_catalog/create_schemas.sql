@@ -1,0 +1,5 @@
+CREATE CATALOG IF NOT EXISTS thebetty;
+
+CREATE SCHEMA IF NOT EXISTS thebetty.bronze;
+CREATE SCHEMA IF NOT EXISTS thebetty.silver;
+CREATE SCHEMA IF NOT EXISTS thebetty.gold;

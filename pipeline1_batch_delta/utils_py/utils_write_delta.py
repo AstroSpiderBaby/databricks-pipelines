@@ -1,15 +1,10 @@
-"""
-utils_write_delta.py
-
-Robust utility to write Spark DataFrames to Delta Lake with logging, partitioning, schema merge, and table registration.
-"""
-
 from pyspark.sql import DataFrame, SparkSession
 from typing import Optional, List
 
 def write_to_delta(
     df: DataFrame,
     path: str,
+    full_table_name: Optional[str] = None,  # thebetty.bronze.my_table
     mode: str = "overwrite",
     merge_schema: bool = True,
     register_table: bool = True,
@@ -37,20 +32,27 @@ def write_to_delta(
             if verbose:
                 print(f"✅ Data written to {path}")
 
-        table_name = path.rstrip("/").split("/")[-1]
+        if register_table and full_table_name:
+            # Handle /mnt path conversion to abfss path for Unity Catalog
+            if path.startswith("/mnt/"):
+                container_and_path = path.replace("/mnt/", "")
+                container, *subdirs = container_and_path.split("/")
+                # ⚠️ Replace this with your actual storage account name
+                storage_account_name = "lv426storageaccount"
+                abfss_path = f"abfss://{container}@{storage_account_name}.dfs.core.windows.net/" + "/".join(subdirs)
+            else:
+                abfss_path = path
 
-        if register_table:
             spark = SparkSession.builder.getOrCreate()
-            spark.sql(f"DROP TABLE IF EXISTS {table_name}")
+            spark.sql(f"DROP TABLE IF EXISTS {full_table_name}")
             spark.sql(f"""
-                CREATE TABLE {table_name}
+                CREATE TABLE {full_table_name}
                 USING DELTA
-                LOCATION '{path}'
+                LOCATION '{abfss_path}'
             """)
             if verbose:
-                print(f"📚 Table registered: {table_name}")
-
-            return table_name
+                print(f"📚 Table registered: {full_table_name}")
+            return full_table_name
 
         return None
 
