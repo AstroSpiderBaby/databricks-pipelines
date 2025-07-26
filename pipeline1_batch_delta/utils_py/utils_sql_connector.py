@@ -1,27 +1,32 @@
-def read_sql_table(table_name: str, database: str = "fury161"):
-    """
-    Reads a SQL Server table into a Spark DataFrame.
-    """
-    from pyspark.sql import SparkSession
-    import builtins
+"""
+sql_connector.py
 
-    dbutils = builtins.dbutils if hasattr(builtins, "dbutils") else None
-    if dbutils is None:
-        raise RuntimeError("dbutils not available in this environment.")
+Securely retrieves a SQL Server table via JDBC using secrets stored in Azure Key Vault.
+"""
 
-    spark = SparkSession.builder.getOrCreate()
+from pyspark.sql import SparkSession
+from typing import Optional
 
-    host = "100.100.211.77"
-    port = 1433
-    jdbc_url = f"jdbc:sqlserver://{host}:{port};database={database}"
+# === Ensure dbutils is available regardless of context ===
+try:
+    dbutils  # If available (e.g. notebooks), use as-is
+except NameError:
+    from pyspark.dbutils import DBUtils
+    dbutils = DBUtils(SparkSession.builder.getOrCreate())
 
-    user = dbutils.secrets.get(scope="databricks-secrets-lv426", key="sql-user")
-    password = dbutils.secrets.get(scope="databricks-secrets-lv426", key="sql-password")
+# === Get secrets from Azure Key Vault-backed scope ===
+jdbc_url = dbutils.secrets.get(scope="databricks-secrets-lv426", key="sql-jdbc-url")
+sql_user = dbutils.secrets.get(scope="databricks-secrets-lv426", key="sql-user")
+sql_password = dbutils.secrets.get(scope="databricks-secrets-lv426", key="sql-password")
 
-    connection_properties = {
-        "user": user,
-        "password": password,
-        "driver": "com.microsoft.sqlserver.jdbc.SQLServerDriver"
-    }
+# === JDBC connection properties ===
+connection_properties = {
+    "user": sql_user,
+    "password": sql_password,
+    "driver": "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+}
 
+def read_sql_table(table_name: str, spark: Optional[SparkSession] = None):
+    if spark is None:
+        spark = SparkSession.builder.getOrCreate()
     return spark.read.jdbc(url=jdbc_url, table=table_name, properties=connection_properties)
