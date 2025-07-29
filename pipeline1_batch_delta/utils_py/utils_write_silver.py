@@ -6,7 +6,9 @@ Silver-level Delta write utility using hash-based upsert.
 
 import os
 from pyspark.sql import DataFrame
-from utils.utils_upsert_with_hashstring import upsert_with_hashstring
+from pyspark.sql.utils import AnalysisException
+from utils_py.utils_upsert_with_hashstring import upsert_with_hashstring  # ✅ FIXED import
+
 
 def write_silver_upsert(
     df: DataFrame,
@@ -19,25 +21,9 @@ def write_silver_upsert(
     register_table: bool = True,
     verbose: bool = False
 ):
-    """
-    Writes data to a Delta Silver table using hash-based upsert (via merge).
-
-    Args:
-        df (DataFrame): Cleaned and hashed DataFrame.
-        path (str): Unity Catalog or DBFS path to write the Delta table.
-        full_table_name (str): Unity Catalog-qualified table name (e.g., catalog.schema.table).
-        primary_key (str): Column used as unique identifier (e.g., 'vendor_id').
-        hash_col (str): Column used for detecting changes (e.g., 'hashstring').
-        required_columns (list[str]): Ensures essential fields exist before write.
-        partition_by (list[str]): Optional partitioning fields.
-        register_table (bool): If True, registers with catalog.
-        verbose (bool): Enable verbose logging.
-
-    Returns:
-        None
-    """
     spark = df.sparkSession
 
+    # ✅ Column validation
     if required_columns:
         actual = set(df.columns)
         missing = set(required_columns) - actual
@@ -50,20 +36,29 @@ def write_silver_upsert(
         print(f"🔑 Primary key: {primary_key}")
         print(f"📦 Partitioning: {partition_by or 'None'}")
 
-    # Perform the actual upsert
-    upsert_with_hashstring(
-        df_new=df,
-        path=path,
-        primary_key=primary_key,
-        hash_col=hash_col
-    )
+    # ✅ Step 1: Perform upsert
+    try:
+        upsert_with_hashstring(
+            df_new=df,
+            path=path,
+            primary_key=primary_key,
+            hash_col=hash_col
+        )
+    except Exception as e:
+        raise RuntimeError("🔥 Upsert failed inside write_silver_upsert.") from e
 
-    # Optional Unity Catalog table registration
-    if register_table:
-        if not spark.catalog._jcatalog.tableExists(full_table_name):
+    # ✅ Step 2: Register Unity Catalog table dynamically
+    if register_table and path.startswith("/Volumes/"):
+        try:
+            spark.sql(f"""
+                CREATE TABLE IF NOT EXISTS {full_table_name}
+                AS SELECT * FROM delta.`{path}`
+            """)
             if verbose:
-                print(f"📚 Registering table: {full_table_name}")
-            df.limit(0).write.saveAsTable(full_table_name)
+                print(f"📚 Registered Unity Catalog table: {full_table_name}")
+        except Exception as e:
+            print(f"⚠️ Failed to register table {full_table_name}: {e}")
+
 
     if verbose:
         print("✅ Silver table write complete.")

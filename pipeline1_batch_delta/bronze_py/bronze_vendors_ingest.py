@@ -18,6 +18,7 @@ spark = SparkSession.builder.getOrCreate()
 # Define input and output paths (using Unity Catalog Volumes)
 input_path = "/Volumes/thebetty/bronze/landing_zone/Vendors.csv"
 output_path = "/Volumes/thebetty/bronze/vendors"
+full_table_name = "thebetty.bronze.vendors"  # ✅ Add Unity Catalog table registration
 
 # Read CSV file from volume
 df_vendors = (
@@ -33,6 +34,7 @@ df_vendors = (
 write_to_delta(
     df=df_vendors,
     path=output_path,
+    full_table_name=full_table_name,  # ✅ Register in Unity Catalog
     partition_by=None,
     mode="overwrite",
     merge_schema=True,

@@ -9,17 +9,20 @@ Cleans Bronze-level web form submissions for reporting and enrichment.
 - Writes to Silver Delta Layer
 """
 
+import sys
+sys.path.append("/Workspace/Repos/brucejenks@live.com/databricks-pipelines/pipeline1_batch_delta")
+
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import to_timestamp
-from pyspark.sql.functions import col
+from pyspark.sql.functions import to_timestamp, col
+from utils_py.utils_write_silver import write_silver_upsert
 
 # Initialize Spark session
 spark = SparkSession.builder.getOrCreate()
 
-# Load Bronze table
-df_raw = spark.read.format("delta").load("/mnt/delta/bronze/web_form_submissions")
+# === Step 1: Load Bronze-level web form submissions ===
+df_raw = spark.read.format("delta").load("/Volumes/thebetty/bronze/web_forms")
 
-# Clean and transform
+# === Step 2: Clean and transform ===
 df_clean = (
     df_raw.select(
         "submission_id",
@@ -34,18 +37,19 @@ df_clean = (
     .dropna(subset=["submission_id", "submitted_at"])
 )
 
-# Write to Silver
-df_clean.write.format("delta") \
-    .mode("overwrite") \
-    .option("mergeSchema", "true") \
-    .save("/mnt/delta/silver/web_forms_clean")
+# === Step 3: Write to Unity Catalog Silver Volume/Table ===
+output_path = "/Volumes/thebetty/silver/web_forms_clean"
+full_table_name = "thebetty.silver.web_forms_clean"
 
-# Optional SQL registration
-spark.sql("DROP TABLE IF EXISTS web_forms_clean")
-spark.sql("""
-    CREATE TABLE web_forms_clean
-    USING DELTA
-    LOCATION '/mnt/delta/silver/web_forms_clean'
-""")
+write_silver_upsert(
+    df=df_clean,
+    path=output_path,
+    full_table_name=full_table_name,
+    primary_key="submission_id",
+    required_columns=df_clean.columns,
+    partition_by=["submitted_at"],
+    register_table=True,
+    verbose=True
+)
 
-print("✅ Web forms cleaned and written to Silver successfully.")
+print("✅ Web forms cleaned and written to Silver with Unity Catalog support.")

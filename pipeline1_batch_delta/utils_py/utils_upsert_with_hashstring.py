@@ -36,7 +36,7 @@ def upsert_with_hashstring(df_new, path, primary_key, hash_col="hashstring"):
         None
     """
     from delta.tables import DeltaTable
-    spark = df_new.sparkSession  # Use existing session
+    spark = df_new.sparkSession
 
     if isinstance(primary_key, str):
         primary_key = [primary_key]
@@ -44,14 +44,28 @@ def upsert_with_hashstring(df_new, path, primary_key, hash_col="hashstring"):
     if DeltaTable.isDeltaTable(spark, path):
         delta_table = DeltaTable.forPath(spark, path)
 
+        # Create join condition
         condition = " AND ".join([f"target.{col} = source.{col}" for col in primary_key])
+
+        # Get matching columns for update/insert (intersection only)
+        target_cols = set(delta_table.toDF().columns)
+        source_cols = set(df_new.columns)
+        common_cols = list(target_cols & source_cols)
+
+        set_expr = {col: f"source.{col}" for col in common_cols}
 
         delta_table.alias("target").merge(
             df_new.alias("source"),
             condition
         ).whenMatchedUpdate(
             condition=f"target.{hash_col} != source.{hash_col}",
-            set={col: f"source.{col}" for col in df_new.columns}
-        ).whenNotMatchedInsertAll().execute()
+            set=set_expr
+        ).whenNotMatchedInsert(
+            values=set_expr
+        ).execute()
     else:
-        df_new.write.format("delta").mode("overwrite").save(path)
+        df_new.write \
+            .format("delta") \
+            .option("mergeSchema", "true") \
+            .mode("overwrite") \
+            .save(path)

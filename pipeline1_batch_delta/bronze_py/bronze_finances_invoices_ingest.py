@@ -18,6 +18,7 @@ spark = SparkSession.builder.getOrCreate()
 # Define input and output paths (using Unity Catalog Volumes)
 input_path = "/Volumes/thebetty/bronze/landing_zone/Finances_Invoices.csv"
 output_path = "/Volumes/thebetty/bronze/finances_invoices"
+full_table_name = "thebetty.bronze.finances_invoices"  # 🆕
 
 # Read CSV file from volume
 df_invoices = (
@@ -33,6 +34,7 @@ df_invoices = (
 write_to_delta(
     df=df_invoices,
     path=output_path,
+    full_table_name=full_table_name,  # ✅ Added
     partition_by=None,
     mode="overwrite",
     merge_schema=True,

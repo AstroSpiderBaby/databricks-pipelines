@@ -2,27 +2,30 @@
 gold_vendor_summary.py
 
 Generates the final Gold-level vendor summary by aggregating invoices,
-joining compliance and registry info, and writing the result to Delta.
+joining compliance and registry info, and writing the result to Unity Delta Volume.
+
+Output:
+- Unity Volume: /Volumes/thebetty/gold/final_vendor_summary
+- Table: thebetty.gold.final_vendor_summary
+- Log Table: thebetty.gold.final_vendor_summary_runs
 """
+
 import sys
 sys.path.append("/Workspace/Repos/brucejenks@live.com/databricks-pipelines/pipeline1_batch_delta")
 
-from utils_py.utils_write_delta import write_to_delta
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, max, countDistinct, current_timestamp
-
-# Reusable Delta write utility
 from utils_py.utils_write_delta import write_to_delta
 
-# Spark session
+# Start Spark session
 spark = SparkSession.builder.getOrCreate()
 
-# Load inputs
-df_finance = spark.read.format("delta").load("/mnt/delta/silver/final_vendor_summary_prep")
-df_registry = spark.read.format("delta").load("/mnt/delta/silver/vendor_registry_clean").alias("registry")
-df_compliance = spark.read.format("delta").load("/mnt/delta/silver/vendor_compliance_clean").alias("compliance")
+# === Step 1: Load Silver inputs from Unity Volumes ===
+df_finance = spark.read.format("delta").load("/Volumes/thebetty/silver/final_vendor_summary_prep")
+df_registry = spark.read.format("delta").load("/Volumes/thebetty/silver/vendor_registry_clean").alias("registry")
+df_compliance = spark.read.format("delta").load("/Volumes/thebetty/bronze/vendor_compliance").alias("compliance")
 
-# Join and aggregate
+# === Step 2: Join and Aggregate ===
 df_gold = (
     df_finance
     .join(df_registry, on="vendor_id", how="left")
@@ -44,8 +47,8 @@ df_gold = (
     .withColumn("pipeline_run_timestamp", current_timestamp())
 )
 
-# Write Gold table
-target_path = "/mnt/delta/gold/final_vendor_summary"
+# === Step 3: Write Gold table ===
+target_path = "/Volumes/thebetty/gold/final_vendor_summary"
 write_to_delta(
     df=df_gold,
     path=target_path,
@@ -53,23 +56,26 @@ write_to_delta(
     register_table=True,
     merge_schema=True,
     partition_by=["tier"],
+    full_table_name="thebetty.gold.final_vendor_summary",
     verbose=True
 )
 
-# Track run summary
+# === Step 4: Log Pipeline Run ===
 df_log = df_gold.select(
     current_timestamp().alias("run_time"),
     countDistinct("vendor_id").alias("vendor_count"),
     countDistinct("vendor_name").alias("vendor_name_count")
 )
 
-log_path = "/mnt/delta/logs/final_vendor_summary_runs"
+log_path = "/Volumes/thebetty/gold/logs/final_vendor_summary_runs"
 write_to_delta(
     df=df_log,
     path=log_path,
     mode="append",
     register_table=True,
-    merge_schema=True
+    merge_schema=True,
+    full_table_name="thebetty.gold.final_vendor_summary_runs",
+    verbose=True
 )
 
-print("✅ Final vendor summary written to Gold layer.")
+print("✅ Final vendor summary written to Unity Gold layer.")

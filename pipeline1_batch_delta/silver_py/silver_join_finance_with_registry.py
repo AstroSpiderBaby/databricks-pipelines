@@ -2,38 +2,41 @@
 silver_join_finance_with_registry.py
 
 Joins Silver-level enriched finance + vendor data with Vendor Registry data.
-Outputs the fully enriched dataset and registers it as a Delta table.
+Writes the fully enriched result to Unity Volume and registers as Delta table.
 """
 
+import sys
+sys.path.append("/Workspace/Repos/brucejenks@live.com/databricks-pipelines/pipeline1_batch_delta")
+
 from pyspark.sql import SparkSession
+from utils_py.utils_write_silver import write_silver_upsert
 
 # Initialize Spark session
 spark = SparkSession.builder.getOrCreate()
 
-# Define source paths
-finance_path = "/mnt/delta/silver/finance_with_vendor_info"
-registry_path = "/mnt/delta/silver/vendor_registry_clean"
-output_path = "/mnt/delta/silver/finance_with_vendors_enriched"
+# === Step 1: Define source Unity Volume paths ===
+finance_path = "/Volumes/thebetty/silver/finance_with_vendor_info"
+registry_path = "/Volumes/thebetty/silver/vendor_registry_clean"
+output_path = "/Volumes/thebetty/silver/finance_with_vendors_enriched"
+full_table_name = "thebetty.silver.finance_with_vendors_enriched"
 
-# Load data
+# === Step 2: Load Silver tables ===
 df_finance = spark.read.format("delta").load(finance_path)
 df_registry = spark.read.format("delta").load(registry_path)
 
-# Perform join
+# === Step 3: Perform enrichment join ===
 df_enriched = df_finance.join(df_registry, on="vendor_id", how="left")
 
-# Write to Silver (final enrichment before Gold)
-df_enriched.write.format("delta") \
-    .mode("overwrite") \
-    .option("overwriteSchema", "true") \
-    .save(output_path)
+# === Step 4: Write to Unity Volume and register table ===
+write_silver_upsert(
+    df=df_enriched,
+    path=output_path,
+    full_table_name=full_table_name,
+    primary_key="invoice_id",
+    required_columns=df_enriched.columns,  # keep all columns
+    partition_by=["invoice_date"],  # optional, but good for performance if date exists
+    register_table=True,
+    verbose=True
+)
 
-# Register as Delta table (optional for query/BI access)
-spark.sql("DROP TABLE IF EXISTS finance_with_vendors_enriched")
-spark.sql(f"""
-    CREATE TABLE finance_with_vendors_enriched
-    USING DELTA
-    LOCATION '{output_path}'
-""")
-
-print(f"✅ Successfully wrote and registered: {output_path}")
+print(f"✅ Successfully wrote and registered: {full_table_name}")
