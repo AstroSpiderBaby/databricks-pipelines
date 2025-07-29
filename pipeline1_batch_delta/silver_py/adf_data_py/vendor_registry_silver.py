@@ -4,10 +4,10 @@ vendor_registry_silver.py
 Cleans ADF-sourced vendor registry data and writes it to Silver Delta Lake using hash-based upsert.
 
 Input:
-- dbfs:/mnt/adf-silver/ (Parquet from ADF)
+- Unity Catalog Volume: /Volumes/thebetty/silver/landing_zone/ (Parquet from ADF)
 
 Output:
-- /mnt/delta/silver/vendor_registry_clean
+- Unity Catalog Table: thebetty.silver.vendor_registry_clean
 """
 
 import sys
@@ -15,21 +15,22 @@ sys.path.append("/Workspace/Repos/brucejenks@live.com/databricks-pipelines/pipel
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, sha2, concat_ws, current_timestamp
-from utils.utils_upsert_with_hashstring import upsert_with_hashstring
+from utils_py.utils_silver_write import write_silver_upsert
 
 # Create Spark session
 spark = SparkSession.builder.getOrCreate()
 
-# Read raw ADF Parquet
-df_raw = spark.read.format("parquet").load("dbfs:/mnt/adf-silver")
+# === STEP 1: Read raw Parquet from Unity Volume ===
+input_path = "/Volumes/thebetty/silver/landing_zone"
+df_raw = spark.read.format("parquet").load(input_path)
 
-# Clean and select relevant columns
+# === STEP 2: Clean and select relevant columns ===
 df_clean = df_raw.select(
     "vendor_id", "industry", "headquarters", "onwatchlist",
     "registrationdate", "tier"
 ).dropna(subset=["vendor_id"])
 
-# Add hashstring for upsert logic
+# === STEP 3: Add hashstring for upsert logic ===
 df_hashed = (
     df_clean.withColumn(
         "hashstring",
@@ -44,15 +45,21 @@ df_hashed = (
     ).withColumn("ingestion_timestamp", current_timestamp())
 )
 
-# Define Silver output path
-target_path = "/mnt/delta/silver/vendor_registry_clean"
+# === STEP 4: Define output and write to Unity Catalog ===
+output_path = "/Volumes/thebetty/silver/vendor_registry_clean"
+full_table_name = "thebetty.silver.vendor_registry_clean"
 
-# Upsert to Delta
-upsert_with_hashstring(
+write_silver_upsert(
     df=df_hashed,
-    path=target_path,
+    path=output_path,
+    full_table_name=full_table_name,
     primary_key="vendor_id",
-    hash_col="hashstring"
+    required_columns=[
+        "vendor_id", "industry", "headquarters", "onwatchlist",
+        "registrationdate", "tier", "hashstring"
+    ],
+    register_table=True,
+    verbose=True
 )
 
-print("✅ Vendor registry written to Silver with upsert.")
+print("✅ Vendor registry written to Silver with Unity-compatible upsert.")
