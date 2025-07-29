@@ -28,8 +28,3 @@ classifiers = [
 [tool.setuptools.packages.find]
 include = ["common", "mock_data", "pipeline1_batch_delta"]
 """
-
-# Save updated file
-pyproject_path.write_text(updated_pyproject)
-
-pyproject_path.name
