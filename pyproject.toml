@@ -1,10 +1,16 @@
-[build-system]
+from pathlib import Path
+
+# Path to the pyproject.toml file
+pyproject_path = Path("/mnt/data/pyproject.toml")
+
+# Updated content with version bumped to 0.2.8
+updated_pyproject = """[build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "databricks-pipelines"
-version = "0.2.0"
+version = "0.2.8"
 description = "Modular Databricks pipelines with common, mock, and bronze layers"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -19,6 +25,11 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
-# ✅ Explicitly include only these packages
 [tool.setuptools.packages.find]
 include = ["common", "mock_data", "pipeline1_batch_delta"]
+"""
+
+# Save updated file
+pyproject_path.write_text(updated_pyproject)
+
+pyproject_path.name
