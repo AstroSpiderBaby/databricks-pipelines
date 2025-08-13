@@ -7,8 +7,8 @@ Silver-level Delta write utility using hash-based upsert.
 import os
 from pyspark.sql import DataFrame
 from pyspark.sql.utils import AnalysisException
-from utils_py.utils_upsert_with_hashstring import upsert_with_hashstring  # ✅ FIXED import
-from pyspark.sql.functions import sha2, concat_ws, coalesce, col  # ⬅ add this import
+from utils_py.utils_upsert_with_hashstring import upsert_with_hashstring  
+from pyspark.sql.functions import sha2, concat_ws, coalesce, col, lit
 
 def write_silver_upsert(
     df: DataFrame,
@@ -42,7 +42,7 @@ def write_silver_upsert(
     cols_for_hash = [c for c in cols_for_hash if c not in EXCLUDE_FROM_HASH]
 
     hash_expr = sha2(
-        concat_ws('||', *[coalesce(col(c).cast('string'), '') for c in cols_for_hash]),
+        concat_ws('||', *[coalesce(col(c).cast('string'), lit('')) for c in cols_for_hash]),
         256
     )
     df_hashed = df.withColumn(hash_col, hash_expr)
