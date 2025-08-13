@@ -1,72 +1,33 @@
+from pyspark.sql import SparkSession
+from pathlib import Path
 
-# governance/update_uc_tags.py
-from pyspark.sql.functions import current_timestamp, lit
-from pyspark.sql import Row
-import uuid
+spark = SparkSession.builder.getOrCreate()
 
-spark = spark  # noqa
+def _find_sql() -> Path:
+    # 1) Next to this script (works when __file__ is defined)
+    if "__file__" in globals():
+        p = Path(__file__).resolve().parent / "lineage_tags.sql"
+        if p.exists():
+            return p
 
-# --- 1) Stamp tags on the Gold table ---
-user = spark.sql("SELECT current_user() AS u").first().u
-now  = spark.sql("SELECT current_timestamp() AS t").first().t
+    # 2) Repo-root candidates (Databricks Git tasks start in repo root)
+    cwd = Path.cwd()
+    for rel in [
+        "pipeline1_batch_delta/lineage_tags/lineage_tags.sql",
+        "lineage_tags/lineage_tags.sql",
+        "lineage_tags.sql",
+    ]:
+        p = cwd / rel
+        if p.exists():
+            return p
 
-spark.sql(f"""
-ALTER TABLE thebetty.gold.final_vendor_summary
-  SET TAGS (
-    'last_run_user' = '{user}',
-    'last_pipeline_run' = '{now}'
-  )
-""")
+    raise FileNotFoundError("Could not locate lineage_tags.sql from script or repo root")
 
-# --- 2) Collect rows_changed from upstream tasks (best effort) ---
-# Adjust names if your job task keys differ; these are from your workflow.
-task_keys = [
-    "silver_web_forms_clean_py",
-    "silver_clean_finance_invoices_py",
-    "silver_finalize_vendor_summary_py",
-    "silver_clean_vendor_compliance_py",
-    "silver_join_finance_registry_py",
-    "silver_join_inventory_shipments_py",
-]
-total_changed = 0
-for tk in task_keys:
-    try:
-        v = dbutils.jobs.taskValues.getOrElse(tk, "rows_changed", "0")
-        total_changed += int(v)
-    except Exception:
-        pass  # task may not have set the value; ignore
+sql_path = _find_sql()
+sql_text = sql_path.read_text(encoding="utf-8")
 
-# --- 3) Ensure the run-log table exists & append a receipt row ---
-spark.sql("""
-CREATE TABLE IF NOT EXISTS thebetty.gold.final_vendor_summary_runs
-(
-  run_id        STRING,
-  run_time      TIMESTAMP,
-  ran_by        STRING,
-  job_id        STRING,
-  task_name     STRING,
-  rows_changed  BIGINT,
-  status        STRING,
-  note          STRING
-) USING DELTA
-""")
+# Execute each statement separated by semicolons
+for stmt in [s.strip() for s in sql_text.split(";") if s.strip()]:
+    spark.sql(stmt)
 
-# Try to capture a job id (best effort)
-try:
-    job_id = str(dbutils.jobs.taskContext().jobId())
-except Exception:
-    job_id = None
-
-row = [
-    (str(uuid.uuid4()), now, user, job_id, "batch1_py_pipeline",
-     int(total_changed), "succeeded",
-     "Pipeline executed; tags stamped; demo-friendly receipt")
-]
-
-spark.createDataFrame(row, schema="""
-    run_id STRING, run_time TIMESTAMP, ran_by STRING, job_id STRING, task_name STRING,
-    rows_changed BIGINT, status STRING, note STRING
-""").write.mode("append").saveAsTable("thebetty.gold.final_vendor_summary_runs")
-
-print(f"🧾 Run receipt written. rows_changed_total={total_changed}")
-print("🏷️ Tags stamped on thebetty.gold.final_vendor_summary.")
+print(f"✅ Applied lineage/data-governance SQL from {sql_path}")
