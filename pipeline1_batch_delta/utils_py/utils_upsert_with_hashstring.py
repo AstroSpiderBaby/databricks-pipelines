@@ -22,12 +22,17 @@ def add_hash_column(df, hash_columns, hash_col_name="hashstring"):
     return df.withColumn(hash_col_name, sha2(concat_ws("||", *hash_columns), 256))
 
 
+# utils_upsert_with_hashstring.py
+
 def upsert_with_hashstring(df_new, path, primary_key, hash_col="hashstring"):
     """
-    Performs a hash-based upsert (merge) into a Delta table.
+    Delta upsert with hash-based change detection when possible.
+    Falls back to unconditional UPDATE if target doesn't have the hash column.
     Assumes df_new already contains the hash column.
     """
     from delta.tables import DeltaTable
+    from pyspark.sql.utils import AnalysisException
+
     spark = df_new.sparkSession
 
     # Normalize PK to list
@@ -35,32 +40,54 @@ def upsert_with_hashstring(df_new, path, primary_key, hash_col="hashstring"):
         primary_key = [primary_key]
 
     if DeltaTable.isDeltaTable(spark, path):
-        delta_table = DeltaTable.forPath(spark, path)
+        dt = DeltaTable.forPath(spark, path)
 
-        # Join on PK(s)
+        # Build PK join
         pk_cond = " AND ".join([f"target.{c} = source.{c}" for c in primary_key])
 
-        # Intersect columns; make sure we also write the hash column
-        target_cols = set(delta_table.toDF().columns)
-        source_cols = set(df_new.columns)
-        common_cols = list(target_cols & source_cols)
-        if hash_col in source_cols and hash_col not in common_cols:
-            common_cols.append(hash_col)
+        # Columns to write (intersection)
+        tcols = set(dt.toDF().columns)
+        scols = set(df_new.columns)
+        common = list(tcols & scols)
+        set_expr = {c: f"source.{c}" for c in common}
 
-        set_expr = {c: f"source.{c}" for c in common_cols}
+        # Try to ensure target has the hash column (best effort)
+        has_hash_t = (hash_col in tcols)
+        has_hash_s = (hash_col in scols)
+        if has_hash_s and not has_hash_t:
+            try:
+                spark.sql(f"ALTER TABLE delta.`{path}` ADD COLUMN IF NOT EXISTS {hash_col} STRING")
+                # refresh tcols/common/set_expr after the ALTER
+                tcols = set(dt.toDF().columns)  # might still reflect the old schema; OK if so
+                has_hash_t = (hash_col in tcols)
+                if has_hash_t and hash_col not in common:
+                    common.append(hash_col)
+                    set_expr[hash_col] = f"source.{hash_col}"
+            except AnalysisException:
+                # If ALTER fails (e.g., path-level ALTER not supported), just fall back below.
+                has_hash_t = False
+            except Exception:
+                has_hash_t = False
 
-        # NULL-safe inequality treats NULL vs value as a change
-        change_cond = f"NOT (target.{hash_col} <=> source.{hash_col})"
+        # Choose strategy
+        builder = dt.alias("target").merge(df_new.alias("source"), pk_cond)
 
-        (delta_table.alias("target")
-            .merge(df_new.alias("source"), pk_cond)
-            .whenMatchedUpdate(condition=change_cond, set=set_expr)
-            .whenNotMatchedInsert(values=set_expr)
-            .execute())
+        if has_hash_t and has_hash_s:
+            # Hash-based update with NULL-safe inequality
+            builder = builder.whenMatchedUpdate(
+                condition=f"NOT (target.{hash_col} <=> source.{hash_col})",
+                set=set_expr
+            )
+        else:
+            # Fallback: unconditional update to avoid unresolved column errors
+            builder = builder.whenMatchedUpdate(set=set_expr)
+
+        builder.whenNotMatchedInsert(values=set_expr).execute()
+
     else:
         # First write creates the table (schema merged)
         (df_new.write
-              .format("delta")
-              .option("mergeSchema", "true")
-              .mode("overwrite")
-              .save(path))
+             .format("delta")
+             .option("mergeSchema", "true")
+             .mode("overwrite")
+             .save(path))
