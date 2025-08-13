@@ -25,47 +25,42 @@ def add_hash_column(df, hash_columns, hash_col_name="hashstring"):
 def upsert_with_hashstring(df_new, path, primary_key, hash_col="hashstring"):
     """
     Performs a hash-based upsert (merge) into a Delta table.
-
-    Args:
-        df_new (DataFrame): Incoming DataFrame with new data (must include hashstring column).
-        path (str): Target Delta table path.
-        primary_key (str): Primary key column (string or list).
-        hash_col (str): Hash column used for change detection.
-
-    Returns:
-        None
+    Assumes df_new already contains the hash column.
     """
     from delta.tables import DeltaTable
     spark = df_new.sparkSession
 
+    # Normalize PK to list
     if isinstance(primary_key, str):
         primary_key = [primary_key]
 
     if DeltaTable.isDeltaTable(spark, path):
         delta_table = DeltaTable.forPath(spark, path)
 
-        # Create join condition
-        condition = " AND ".join([f"target.{col} = source.{col}" for col in primary_key])
+        # Join on PK(s)
+        pk_cond = " AND ".join([f"target.{c} = source.{c}" for c in primary_key])
 
-        # Get matching columns for update/insert (intersection only)
+        # Intersect columns; make sure we also write the hash column
         target_cols = set(delta_table.toDF().columns)
         source_cols = set(df_new.columns)
         common_cols = list(target_cols & source_cols)
+        if hash_col in source_cols and hash_col not in common_cols:
+            common_cols.append(hash_col)
 
-        set_expr = {col: f"source.{col}" for col in common_cols}
+        set_expr = {c: f"source.{c}" for c in common_cols}
 
-        delta_table.alias("target").merge(
-            df_new.alias("source"),
-            condition
-        ).whenMatchedUpdate(
-            condition=f"target.{hash_col} != source.{hash_col}",
-            set=set_expr
-        ).whenNotMatchedInsert(
-            values=set_expr
-        ).execute()
+        # NULL-safe inequality treats NULL vs value as a change
+        change_cond = f"NOT (target.{hash_col} <=> source.{hash_col})"
+
+        (delta_table.alias("target")
+            .merge(df_new.alias("source"), pk_cond)
+            .whenMatchedUpdate(condition=change_cond, set=set_expr)
+            .whenNotMatchedInsert(values=set_expr)
+            .execute())
     else:
-        df_new.write \
-            .format("delta") \
-            .option("mergeSchema", "true") \
-            .mode("overwrite") \
-            .save(path)
+        # First write creates the table (schema merged)
+        (df_new.write
+              .format("delta")
+              .option("mergeSchema", "true")
+              .mode("overwrite")
+              .save(path))
