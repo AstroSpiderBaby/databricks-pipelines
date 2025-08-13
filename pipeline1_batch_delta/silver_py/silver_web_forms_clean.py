@@ -38,6 +38,7 @@ df_clean = (
 )
 
 # === Step 3: Write to Unity Catalog Silver Volume/Table ===
+
 output_path = "/Volumes/thebetty/silver/web_forms_clean"
 full_table_name = "thebetty.silver.web_forms_clean"
 
